@@ -1,0 +1,14 @@
+name: core-build
+on:
+  push:
+    paths-ignore:
+      - 'data/sql/blizzlike/**'
+      - 'data/sql/wowhead/**'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: azerothcore/reusable-workflows/.github/workflows/core_build_modules.yml@main
+    with:
+      module_repo: ${{ github.event.repository.name }}

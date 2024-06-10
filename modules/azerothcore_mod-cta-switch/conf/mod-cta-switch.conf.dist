@@ -1,0 +1,31 @@
+#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+#
+
+[worldserver]
+
+########################################
+# mod-cta-switch configuration
+########################################
+#
+#    ModCTASwitch.Enable
+#        Description: Enable the module.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ModCTASwitch.Enable = 0
+
+#
+#    ModCTASwitch.SwitchEots
+#    ModCTASwitch.SwitchSota
+#    ModCTASwitch.SwitchIoc
+#        Description: When the Call to Arms! event starts, switch it to another one specified in this config.
+#
+
+ModCTASwitch.SwitchWsg = 19
+ModCTASwitch.SwitchAB = 20
+ModCTASwitch.SwitchAV = 18
+ModCTASwitch.SwitchEots = 19
+ModCTASwitch.SwitchSota = 20
+ModCTASwitch.SwitchIoc = 18

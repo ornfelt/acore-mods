@@ -1,0 +1,5 @@
+CU_SET_PATH("CMAKE_AZTH_SRC_DIR" "${CMAKE_CURRENT_LIST_DIR}/src/")
+
+include("${CMAKE_CURRENT_LIST_DIR}/src/CMakeLists.txt")
+
+

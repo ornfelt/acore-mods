@@ -1,0 +1,25 @@
+#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+#
+
+[worldserver]
+
+########################################
+# mod-black-portal Configuration
+########################################
+#
+#    ModBlackPortal.Enable
+#        Description: Enable my module. Disable to despawn Kruul.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ModBlackPortal.Enable = 1
+
+#    ModBlackPortal.EnablePostEvent
+#        Description: Enables demons to pour from the Dark Portal periodically.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ModBlackPortal.EnablePostEvent = 0

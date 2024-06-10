@@ -1,0 +1,7 @@
+[worldserver]
+
+#
+# MorphAll.SkipSpecificGmLevel = 3 means that the command will not morph any staff member above  gm level 3
+#
+
+MorphAll.SkipSpecificGmLevel = 3

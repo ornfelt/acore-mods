@@ -1,0 +1,137 @@
+[worldserver]
+
+#
+#    AnnounceEnable
+#        Description: Enable the module announcing its presence.
+#        Default:     true  - (Enabled)
+#                     false - (Disabled)
+
+AnnounceEnable = true
+
+#
+#    TemplateEnable
+#        Description: Enable the application of templates.
+#        Default:     true  - (Enabled)
+#                     false - (Disabled)
+
+TemplateEnable = true
+
+#
+#    LevelEnable
+#        Description: Enable templates to be applied at any level.
+#        Default:     true  - (Enabled, any level)
+#                     false - (Disabled, only at StartPlayerLevel)
+
+LevelEnable = true
+
+#
+#   TemplateAchievements
+#   TemplateBagGear
+#   TemplateDK
+#   TemplateEquipGear
+#   TemplateHomebind
+#   TemplateHotbar       - false
+#   TemplateLevel
+#   TemplateQuests       - false
+#   TemplateReputation
+#   TemplateResources
+#   TemplateSkills
+#   TemplateSpells
+#   TemplateTaximask
+#   TemplateTeleport
+#       Description: Enable various aspects of template sets to be applied.
+#       Defaults:    true  - (Enabled)
+#                    false - (Disabled)
+
+TemplateAchievements = true
+TemplateBagGear      = true
+TemplateDK           = true
+TemplateEquipGear    = true
+TemplateHomebind     = true
+TemplateHotbar       = false
+TemplateLevel        = true
+TemplateQuests       = false
+TemplateReputation   = true
+TemplateResources    = true
+TemplateSkills       = true
+TemplateSpells       = true
+TemplateTaximask     = true
+TemplateTeleport     = true
+
+#
+#    DeleteItems
+#        Description: Set whether items in inventory before the template is applied are deleted entirely or sent through the mail.
+#        Default:     true  - (Enabled, delete items in inventory)
+#                     false - (Disabled, send items through mail)
+
+DeleteItems = true
+
+#
+#    LoginTemplateIndex
+#        Description: Template index to automatically apply to characters on first login.
+#        Default:     0 - (Disabled, no template will be applied)
+
+LoginTemplateIndex = 0
+
+#
+#    MaintainImprovedValues
+#        Description: If the character has better values than what is set in the template, choose whether they are overwritten or not.
+#        Default:     true  - (Enabled, keep the higher values)
+#                     false - (Disabled, overwrite regardless of character values)
+
+MaintainImprovedValues = true
+
+#
+#    EnableApplySecurity
+#        Description: Set the minimum account security level to apply enabled templates.
+#        Default:     0  - (Enabled, Everyone)
+#                     1  - (Enabled, Mods/GMs/Admins)
+#                     2  - (Enabled, GMs/Admins)
+#                     3  - (Enabled, Admins)
+#                     4  - (Disabled)
+
+EnableApplySecurity = 0
+
+#
+#    DisableApplySecurity
+#        Description: Set the minimum account security level to apply disabled templates.
+#        Default:     3  - (Enabled, Admins)
+#                     0  - (Enabled, Everyone)
+#                     1  - (Enabled, Mods/GMs/Admins)
+#                     2  - (Enabled, GMs/Admins)
+#                     4  - (Disabled)
+
+DisableApplySecurity = 3
+
+#
+#    EnableListSecurity
+#        Description: Set the minimum account security level to list enabled templates.
+#        Default:     0  - (Enabled, Everyone)
+#                     1  - (Enabled, Mods/GMs/Admins)
+#                     2  - (Enabled, GMs/Admins)
+#                     3  - (Enabled, Admins)
+#                     4  - (Disabled)
+
+EnableListSecurity = 0
+
+#
+#    DisableListSecurity
+#        Description: Set the minimum account security level to list disabled templates.
+#        Default:     2  - (Enabled, GMs/Admins)
+#                     0  - (Enabled, Everyone)
+#                     1  - (Enabled, Mods/GMs/Admins)
+#                     3  - (Enabled, Admins)
+#                     4  - (Disabled)
+
+DisableListSecurity = 2
+
+#
+#    StatusSecurityText
+#        Description: Set the minimum account security level to show "Enabled/Disabled" text when listing templates.
+#        Default:     2  - (Enabled, GMs/Admins)
+#                     0  - (Enabled, Everyone)
+#                     1  - (Enabled, Mods/GMs/Admins)
+#                     3  - (Enabled, Admins)
+#                     4  - (Disabled)
+
+StatusSecurityText = 2

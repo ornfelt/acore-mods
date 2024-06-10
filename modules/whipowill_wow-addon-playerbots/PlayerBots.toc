@@ -1,0 +1,12 @@
+## Interface: 30305
+## Title: PlayerBots
+## Author: ike3 & whipowill
+## Notes: PlayerBot UI
+## DefaultState: Enabled
+## LoadOnDemand: 0
+## SavedVariables: frameopts
+
+Locale.lua
+Locale\zhCN.lua
+Locale\zhTW.lua
+PlayerBots.lua

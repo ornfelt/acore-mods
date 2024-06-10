@@ -1,0 +1,270 @@
+[worldserver]
+
+###################################################################################################
+#
+#    GlobalChat.Enable
+#        Description: Enable GlobalChat
+#        Default:     1	- (Enabled)
+#                     0	- (Disabled)
+
+GlobalChat.Enable = 1
+
+#   GlobalChat.Announce
+#        Description: Announce Module
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
+
+GlobalChat.Announce = 1
+
+#
+#    GlobalChat.Chat.Name
+#        Description: GlobalChat Name
+#        Default:     "Global"
+#
+
+GlobalChat.Chat.Name = "Global"
+
+#
+#    GlobalChat.Chat.NameColor
+#        Description: Color the GlobalChat Name is displayed in
+#        Default:     "FFFF00"
+#
+
+GlobalChat.Chat.NameColor = "FFFF00"
+
+#
+#    GlobalChat.Chat.TextColor
+#        Description: Changes the color the GlobalChat content is displayed in
+#        Default:     "FFFFFF"
+#
+
+GlobalChat.Chat.TextColor = "FFFFFF"
+
+#
+#    GlobalChat.Player.NameColor
+#        Description: Color of the PlayerName
+#        Default:     1 - (Class)
+#                     2 - (Faction)
+#                     0 - (Disabled)
+#
+
+GlobalChat.Player.NameColor = 1
+
+#
+#    GlobalChat.Player.FactionIcon
+#        Description: Enable showing a faction icon in front of the PlayerName
+#        Default:     0 - (Disabled)
+#                     1 - (Enabled)
+#
+
+GlobalChat.Player.FactionIcon = 0
+
+#
+#    GlobalChat.Player.RaceIcon
+#        Description: Enable showing a race icon in front of the PlayerName
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
+#
+
+GlobalChat.Player.RaceIcon = 1
+
+#
+#    GlobalChat.Player.ClassIcon
+#        Description: Enable showing a class icon in front of the PlayerName
+#        Default:     0 - (Disabled)
+#                     1 - (Enabled)
+#
+
+GlobalChat.Player.ClassIcon = 0
+
+#
+#    GlobalChat.GM.Colors
+#        Description: Colors for names of GMs in GlobalChat. Ordered by Rank, starting at 1.
+#                     If a Rank should not have a GMColor, leave it empty.
+#            Examples: "00FF00;091FE0;FF0000"
+#                      "0000FF;FF0000;000000"
+#                      "00FF00;;FF0000"
+#                      ";091FE0;FF0000"
+#
+#        Default:     "00FF00;091FE0;FF0000"
+#                     "" - (Disabled)
+#
+
+GlobalChat.GM.Colors = "00FF00;091FE0;FF0000"
+
+#
+#    GlobalChat.GM.Badge
+#        Description: Configure when to show the GMChatBadge and GMColors in GlobalChat
+#        Default:     1 - (Always)
+#                     2 - (With GM/Dev On)
+#                     3 - (With Normal GMChatBadge On)
+#                     0 - (Never)
+#
+
+GlobalChat.GM.Badge = 1
+
+#
+#    GlobalChat.FactionSpecific
+#        Description: Enable faction specific GlobalChat
+#        Default:     0	- (Disabled)
+#                     1	- (Enabled)
+#
+
+GlobalChat.FactionSpecific = 0
+
+#
+#    GlobalChat.OnFirstLogin
+#        Description: Enable GlobalChat by default on first character login
+#        Default:     1	- (Enabled)
+#                     0	- (Disabled)
+#
+
+GlobalChat.OnFirstLogin = 1
+
+#
+#    GlobalChat.PlayTimeToChat
+#        Description: Sets PlayTime until GlobalChat can be used
+#        Default:     300 - (seconds)
+#                     0   - (Disabled)
+#
+
+GlobalChat.PlayTimeToChat = 300
+
+#
+#    GlobalChat.CoolDown
+#        Description: Time until a new message can be sent in GlobalChat
+#        Default:     2 - (seconds)
+#                     0 - (Disabled)
+#
+
+GlobalChat.CoolDown = 2
+
+#
+#    GlobalChat.SendToIgnored
+#        Description: Enables sending messages to players even if the sender is ignored by the receiver
+#        Default:     0 - (Disabled)
+#                     1 - (Enabled)
+#
+
+GlobalChat.SendToIgnored = 0
+
+#
+#    GlobalChat.JoinChannelAllowed
+#        Description: Enables /join for GlobalChat
+#        Default:     0	- (Disabled)
+#                     1	- (Enabled)
+#
+
+GlobalChat.JoinChannelAllowed = 0
+
+#
+#    GlobalChat.AnnounceMutes
+#        Description: Enables announcements of GlobalChat mutes executed by GM Commands
+#        Default:     0	- (Disabled)
+#                     1	- (Enabled)
+#
+
+GlobalChat.AnnounceMutes = 0
+
+#
+#    GlobalChat.Profanity.BlockType
+#        Description: How to handle players posting Profanities.
+#        Default:     1 - (Censor Profanity)
+#                     2 - (Block Message)
+#                     3 - (Block Message & Mute Player)
+#                     0 - (Disabled)
+#
+
+GlobalChat.Profanity.BlockType = 1
+
+#
+#    GlobalChat.Profanity.BlockLevel
+#        Description: Player Security Level (Rank) to block profanities. Also supports custom levels.
+#        Default:     0  - (Players)
+#                     1  - (Players + Moderators)
+#                     2  - (Players + Moderators + GMs)
+#                     3  - (Players + Moderators + GMs + Admins)
+#
+
+GlobalChat.Profanity.BlockLevel = 0
+
+#
+#    GlobalChat.Profanity.MuteType
+#        Description: The scale on which players get muted when using profanities.
+#        Default:     1  - (GlobalChat only)
+#                     2  - (GlobalChat + Global)
+#                     0  - (Disabled)
+#
+
+GlobalChat.Profanity.MuteType = 1
+
+#
+#    GlobalChat.Profanity.MuteTime
+#        Description: MuteTime when player uses profanities or banned phrases.
+#        Default:     30 - (seconds)
+#                     0  - (Disabled)
+#
+
+GlobalChat.Profanity.MuteTime = 30
+
+#
+#    GlobalChat.Profanity.FromDBC
+#        Description: Load profanities from DBC
+#        Default:     0	- (Disabled)
+#                     1	- (Enabled)
+#
+
+GlobalChat.Profanity.FromDBC = 0
+
+#
+#    GlobalChat.URL.BlockType
+#        Description: How to handle players posting URLs.
+#        Default:     1 - (Censor URL)
+#                     2 - (Block Message)
+#                     3 - (Block Message & Mute Player)
+#                     0 - (Disabled)
+#
+
+GlobalChat.URL.BlockType = 1
+
+#
+#    GlobalChat.URL.BlockLevel
+#        Description: Player Security Level (Rank) to block URLs. Also supports custom levels.
+#        Default:     0 - (Players)
+#                     1 - (Players + Moderators)
+#                     2 - (Players + Moderators + GMs)
+#                     3 - (Players + Moderators + GMs + Admins)
+#
+
+GlobalChat.URL.BlockLevel = 0
+
+#
+#    GlobalChat.URL.MuteType
+#        Description: The scale on which players get muted when using URLs.
+#        Default:     1  - (GlobalChat only)
+#                     2  - (GlobalChat + Global)
+#                     0  - (Disabled)
+#
+
+GlobalChat.URL.MuteType = 1
+
+#
+#    GlobalChat.URL.MuteTime
+#        Description: MuteTime when player posts URL. GMs will not get muted.
+#        Default:     120 - (seconds)
+#                     0   - (Disabled)
+#
+
+GlobalChat.URL.MuteTime = 120
+
+#
+#    GlobalChat.URL.Whitelist
+#        Description: Whitelisted Domains separated by Semicolons (;)
+#            Example: (azerothcore.org;wowhead.com)
+#        Default:     ""
+#
+
+GlobalChat.URL.Whitelist = ""
+
+#
+###################################################################################################

@@ -1,0 +1,66 @@
+﻿[worldserver]
+#
+###################################################################################################
+
+###################################################################################################
+#    AntiFarming.Enable
+#       Description: Enables or disables the AntiFarming System functionality
+#       Default:     1 - (Enabled)
+#                    0 - (Disabled)
+
+AntiFarming.Enable = 1
+
+#
+#    AntiFarming.LoginMessage
+#       Description: Enable login message "This server is running the Antifarming module."
+#       Default:     1 - (Enabled)
+#                    0 - (Disabled)
+
+AntiFarming.LoginMessage = 1
+
+#
+#    AntiFarming.KickPlayer
+#       Description: Enables or disables the Auto Kick functionality for players that have a certain quantity of Warnings
+#       Default:     1 - (Enabled)
+#                    0 - (Disabled)
+
+AntiFarming.KickPlayer = 1
+
+#
+#    AntiFarming.KickPlayer.Warnings
+#       Description: Amount of Warnings that is necessary to Auto Kick a player
+#       Default:     5
+
+AntiFarming.KickPlayer.Warnings = 5
+
+#
+#    AntiFarming.BanPlayer
+#       Description: Enables or disables the Auto Ban functionality for players that have a certain quantity of Warnings
+#       Default:     1 - (Enabled)
+#                    0 - (Disabled)
+
+AntiFarming.BanPlayer = 0
+
+#
+#    AntiFarming.BanTime
+#       Description: Time (in days) that the player will get banned
+#       Default:     1
+
+AntiFarming.BanTime = 1
+
+#
+#    AntiFarming.BanPlayer.Warnings
+#       Description: Amount of Warnings that is necessary to Auto Ban a player
+#       Default:     8
+
+AntiFarming.BanPlayer.Warnings = 8
+
+#
+#    AntiFarming.MinHealth
+#       Description: Minimum Health Points that some player must have in order to MAYBE be excluded from AntiFarming check when it's get dead.
+#       Default:     10000
+
+AntiFarming.MinHealth = 10000
+
+#
+###################################################################################################

@@ -1,0 +1,35 @@
+#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+#
+
+[worldserver]
+
+########################################
+# Module configuration
+########################################
+#
+#    CQP.Enable
+#        Description: Enable the module
+#        Default:     1 - Enabled
+#                     0 - Disabled
+#
+
+CQP.Enable = 1
+
+########################################
+# Quest configuration
+########################################
+#
+#    CQP.[Quest]
+#        Description: Enable the quest
+#        Default:     1 - Enabled
+#                     0 - Disabled
+#
+#	CQP.Pollution: Cleaning up the Pollution quest
+#	CQP.Sewer: 	   Sewer Cleaning quest
+
+CQP.Pollution = 1
+CQP.Sewer = 1
+
+
+

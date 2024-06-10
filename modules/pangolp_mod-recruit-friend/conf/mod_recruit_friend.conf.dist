@@ -1,0 +1,29 @@
+[worldserver]
+
+#
+# Enable recruit friend command for players
+# default: true
+#
+
+RecruitFriend.enable=true
+
+#
+# Announce Enable
+# default: true
+#
+
+RecruitFriend.announceEnable = true
+
+#
+# Enable recruit friend command cooldown
+# default: true
+#
+
+RecruitFriend.cooldownEnabled = true
+
+#
+# recruit friend cooldown value
+# default: 300000 in Milliseconds
+#
+
+RecruitFriend.cooldownValue = 300000

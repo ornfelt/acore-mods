@@ -1,0 +1,75 @@
+#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+#
+
+[worldserver]
+
+########################################
+# mod-instanced-worldbosses configuration
+########################################
+#
+#    ModInstancedWorldBosses.Enable
+#        Description: Enable the module.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ModInstancedWorldBosses.Enable = 0
+
+#
+#    ModInstancedWorldBosses.ResetTimerSecs
+#        Description: Global boss reset timer in seconds.
+#        Default:    25920 seconds (3 days)
+#
+
+ModInstancedWorldBosses.ResetTimerSecs = 25920
+
+#
+#    ModInstancedWorldBosses.RespawnTimerSecs
+#        Description: Global boss respawn timer in seconds.
+#        Default:    3600 seconds (1 hour)
+#
+
+ModInstancedWorldBosses.RespawnTimerSecs = 3600
+
+#
+#    ModInstancedWorldBosses.GracePeriodSecs.
+#        Description: During this time, players are allowed to receive loot regardless of being locked. Set in seconds.
+#                     This is necessary as otherwise instant locks would lock them out of the boss they have just killed.
+#        Default:    300 seconds (5 minutes)
+#
+
+ModInstancedWorldBosses.GracePeriodSecs = 300
+
+#    ModInstancedWorldBosses.PhaseBosses
+#        Description: Phases players out when engaging bosses.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ModInstancedWorldBosses.PhaseBosses = 0
+
+#    ModInstancedWorldBosses.SkipSavedPlayersWhenPhasing
+#        Description: Skip phasing saved players when engaging bosses.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ModInstancedWorldBosses.SkipSavedPlayersWhenPhasing = 1
+
+#    ModInstancedWorldBosses.Tuning
+#        Description: Apply spells from the DebuffCastList.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ModInstancedWorldBosses.Tuning = 0
+
+#    ModInstancedWorldBosses.DebuffCastList
+#        Description: Spells cast on players once the bosses are engaged, for tuning purposes.
+#        Default:     ""
+#        Example:     "88405:25" (spell:intensity)
+#
+
+ModInstancedWorldBosses.DebuffCastList = ""
+
