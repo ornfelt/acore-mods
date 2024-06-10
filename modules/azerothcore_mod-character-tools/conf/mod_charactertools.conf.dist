@@ -1,0 +1,10 @@
+[worldserver]
+#####################################################################################################
+#   																								#
+# 	CharacterTools																					#
+#		Description: Enables of disable the script for character_tools								#
+#		Default: 1 (Enable)																			#
+#				 0 (Disable)																		#
+#																									#
+CharacterTools = 1																					#
+#####################################################################################################
