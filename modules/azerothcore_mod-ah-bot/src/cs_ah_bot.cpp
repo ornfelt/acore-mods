@@ -42,7 +42,7 @@ public:
     {
         static std::vector<ChatCommand> commandTable =
         {
-            { "ahbotoptions",   SEC_GAMEMASTER,     true,   &HandleAHBotOptionsCommand,     "" },
+            { "ahbotoptions", HandleAHBotOptionsCommand, SEC_GAMEMASTER, Console::Yes }
         };
         return commandTable;
     }

@@ -43,7 +43,7 @@ public:
 
         static ChatCommandTable commandTable =
         {
-            { "worldboss", SEC_GAMEMASTER,     true,  nullptr, "", worldbossTable },
+            { "worldboss", worldbossTable },
         };
 
         return commandTable;

@@ -79,9 +79,15 @@ https://github.com/eyeofstorm/mod-npc-bots
 https://github.com/heyitsbench/mod-ptr-template
 https://github.com/milestorme/mod-solo-lfg
 https://github.com/ornfelt/mod-solocraft
+https://github.com/azerothcore/mod-solocraft
 https://github.com/pangolp/mod-recruit-friend
 https://github.com/trickerer/mod-autobalance
+https://github.com/azerothcore/mod-autobalance
 https://github.com/whipowill/wow-addon-playerbots
+https://github.com/AnchyDev/StatBooster
+https://github.com/Helias/mod-bg-slaveryvalley
+https://github.com/Winfidonarleyan/kargatum-system
+https://github.com/heyitsbench/mod-arac
 
 # other
 https://github.com/azerothcore/AzerothCore-Module-Installer

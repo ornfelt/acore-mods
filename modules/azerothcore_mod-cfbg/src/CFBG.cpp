@@ -35,12 +35,12 @@ CrossFactionGroupInfo::CrossFactionGroupInfo(GroupQueueInfo* groupInfo)
         if (player->getClass() == CLASS_HUNTER && !IsHunterJoining)
             IsHunterJoining = true;
 
-        sumLevels += player->getLevel();
+        sumLevels += player->GetLevel();
         sumAverageItemLevels += player->GetAverageItemLevel();
         playersCount++;
 
         SumAverageItemLevel += player->GetAverageItemLevel();
-        SumPlayerLevel += player->getLevel();
+        SumPlayerLevel += player->GetLevel();
     }
 
     if (!playersCount)
@@ -63,7 +63,7 @@ CrossFactionQueueInfo::CrossFactionQueueInfo(BattlegroundQueue* bgQueue)
                     continue;
 
                 SumAverageItemLevel[team] += player->GetAverageItemLevel();
-                SumPlayerLevel[team] += player->getLevel();
+                SumPlayerLevel[team] += player->GetLevel();
                 PlayersCount[team]++;
             }
         }
@@ -233,7 +233,7 @@ uint32 CFBG::GetBGTeamSumPlayerLevel(Battleground* bg, TeamId team)
     {
         if (player && player->GetTeamId() == team)
         {
-            sum += player->getLevel();
+            sum += player->GetLevel();
         }
     }
 
@@ -850,7 +850,7 @@ bool CFBG::isClassJoining(uint8 _class, Player* player, uint32 minLevel)
         return false;
     }
 
-    return player->getClass() == _class && (player->getLevel() >= minLevel);
+    return player->getClass() == _class && (player->GetLevel() >= minLevel);
 }
 
 void CFBG::UpdateForget(Player* player)

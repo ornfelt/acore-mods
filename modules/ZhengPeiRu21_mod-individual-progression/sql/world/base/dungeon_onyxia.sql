@@ -1,8 +1,14 @@
 DELETE FROM `creature_template` WHERE `entry` BETWEEN 301000 AND 301003;
-REPLACE INTO `creature_template` (`entry`, `modelid1`, `name`, `subname`, `minlevel`, `maxlevel`, `faction`, `speed_walk`, `speed_run`, `detection_range`,`scale`,`rank`,`dmgschool`,`DamageModifier`,`BaseAttackTime`,`RangeAttackTime`,`BaseVariance`,`RangeVariance`,`unit_class`,`unit_flags`,`unit_flags2`,`family`,`type`,`type_flags`,`lootid`,`skinloot`,`PetSpellDataId`,`mingold`,`maxgold`,`AIName`,`MovementType`,`HoverHeight`,`HealthModifier`,`ManaModifier`,`ArmorModifier`,`ExperienceModifier`,`movementId`,`RegenHealth`,`mechanic_immune_mask`,`spell_school_immune_mask`,`flags_extra`,`ScriptName`) VALUES
-(301000, 8570, "Onyxia", "", 63, 63, 103, 1.0, 1.28571, 20.0, 1.0, 3, 0, 15.05, 2000, 2000, 1.0, 1.0, 1, 64, 2048, 0, 2, 108, 301000, 10184, 0, 914892, 1066294, '', 0, 1.0, 330.0, 1.0, 1.0, 1.0, 0, 1, 646659963, 0, 1073742337, 'boss_onyxia_40'),
-(301001, 397, "Onyxian Whelp", "", 56, 57, 16, 1.11111, 1.14286, 18.0, 1.0, 0, 0, 3.7, 2000, 2000, 1.0, 1.0, 1, 0, 2048, 0, 2, 8, 0, 0, 0, 0, 0, '', 1, 1.0, 1.0, 1.0, 1.0, 1.0, 0, 1, 0, 0, 0, ''),
-(301002, 8711, "Onyxian Warder", "", 60, 63, 103, 0.888888, 1.14286, 20.0, 1.0, 1, 0, 9.8, 2000, 2000, 1.0, 1.0, 1, 64, 2048, 0, 2, 8, 301002, 0, 0, 1185, 4741, 'SmartAI', 1, 1.0, 25.0, 1.0, 1.0, 1.0, 0, 1, 617299803, 0, 0, '');
+REPLACE INTO `creature_template` (`entry`, `name`, `subname`, `minlevel`, `maxlevel`, `faction`, `speed_walk`, `speed_run`, `detection_range`,`scale`,`rank`,`dmgschool`,`DamageModifier`,`BaseAttackTime`,`RangeAttackTime`,`BaseVariance`,`RangeVariance`,`unit_class`,`unit_flags`,`unit_flags2`,`family`,`type`,`type_flags`,`lootid`,`skinloot`,`PetSpellDataId`,`mingold`,`maxgold`,`AIName`,`MovementType`,`HoverHeight`,`HealthModifier`,`ManaModifier`,`ArmorModifier`,`ExperienceModifier`,`movementId`,`RegenHealth`,`mechanic_immune_mask`,`spell_school_immune_mask`,`flags_extra`,`ScriptName`) VALUES
+(301000, "Onyxia", "", 63, 63, 103, 1.0, 1.28571, 20.0, 1.0, 3, 0, 15.05, 2000, 2000, 1.0, 1.0, 1, 64, 2048, 0, 2, 108, 301000, 10184, 0, 914892, 1066294, '', 0, 1.0, 330.0, 1.0, 1.0, 1.0, 0, 1, 646659963, 0, 1073742337, 'boss_onyxia_40'),
+(301001, "Onyxian Whelp", "", 56, 57, 16, 1.11111, 1.14286, 18.0, 1.0, 0, 0, 3.7, 2000, 2000, 1.0, 1.0, 1, 0, 2048, 0, 2, 8, 0, 0, 0, 0, 0, '', 1, 1.0, 1.0, 1.0, 1.0, 1.0, 0, 1, 0, 0, 0, ''),
+(301002, "Onyxian Warder", "", 60, 63, 103, 0.888888, 1.14286, 20.0, 1.0, 1, 0, 9.8, 2000, 2000, 1.0, 1.0, 1, 64, 2048, 0, 2, 8, 301002, 0, 0, 1185, 4741, 'SmartAI', 1, 1.0, 25.0, 1.0, 1.0, 1.0, 0, 1, 617299803, 0, 0, '');
+
+DELETE FROM `creature_template_model` WHERE (`CreatureID` BETWEEN 301000 AND 301002);
+INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`, `VerifiedBuild`) VALUES
+(301000, 0, 8570, 1.0, 1.0, NULL),
+(301001, 0, 397, 1.0, 1.0, NULL),
+(301002, 0, 8711, 1.0, 1.0, NULL);
 
 DELETE FROM `spell_dbc` WHERE `ID` = 91003;
 
@@ -908,11 +914,17 @@ DELETE FROM `mapdifficulty_dbc` WHERE `MapID` = 249;
 INSERT INTO `mapdifficulty_dbc` (`ID`, `MapID`, `Difficulty`, `RaidDuration`, `MaxPlayers`, `Difficultystring`) VALUES
 (755, 249, 2, 604800, 40, 'RAID_DIFFICULTY_40PLAYER');
 
+DELETE FROM `dungeonencounter_dbc` WHERE `ID` = 895;
 INSERT INTO `dungeonencounter_dbc` (`ID`, `MapID`, `Difficulty`, `OrderIndex`, `Bit`, `Name_Lang_enUS`, `Name_Lang_enGB`, `Name_Lang_koKR`, `Name_Lang_frFR`, `Name_Lang_deDE`, `Name_Lang_enCN`, `Name_Lang_zhCN`, `Name_Lang_enTW`, `Name_Lang_zhTW`, `Name_Lang_esES`, `Name_Lang_esMX`, `Name_Lang_ruRU`, `Name_Lang_ptPT`, `Name_Lang_ptBR`, `Name_Lang_itIT`, `Name_Lang_Unk`, `Name_Lang_Mask`, `SpellIconID`) VALUES
 (895, 249, 2, 0, 0, 'Onyxia', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16712190, 0);
 
+DELETE FROM `instance_encounters` WHERE `entry` = 895;
 INSERT INTO `instance_encounters` (`entry`, `creditType`, `creditEntry`, `lastEncounterDungeon`, `comment`) VALUES
 (895, 0, 301000, 0, 'Onyxia (Vanilla)');
+
+DELETE FROM `lfgdungeons_dbc` WHERE `ID` = 1000;
+INSERT INTO `lfgdungeons_dbc` VALUES
+(1000,"Onyxia\\'s Lair (Vanilla)","","","","","","","","","","","","","","","",16712190,60,83,60,60,83,249,2,0,2,-1,"",2,0,9,"","","","","","","","","","","","","","","","",16712188);
 
 -- Victory for the Alliance - Bolvar or Varian
 DELETE FROM `creature_questender` WHERE `quest` = 7495;

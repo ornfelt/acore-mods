@@ -1,0 +1,270 @@
+[worldserver]
+########################################
+# STAT BOOSTER CONFIGURATION
+########################################
+# 
+#	StatBooster.Enable
+#		Description: Enable/Disable the module.
+#		Default:	0 - (Disabled)
+#					1 - (Enabled)
+#
+
+StatBooster.Enable = 0
+
+#
+#	StatBooster.VerboseEnable
+#		Description: Enables debug messages in chat and server console.
+#		Default:	0 - (Disabled)
+#					1 - (Enabled)
+#		Note: Only enable this for debugging purposes as this setting has
+#			  a performance hit when run in expensive hooks.
+#
+
+StatBooster.VerboseEnable = 0
+
+########################################
+
+########################################
+#
+#	StatBooster.OnLoginEnable
+#		Description: Enable/Disable chat message shown when logging in.
+#					0 - (Disabled)
+#		Default:	1 - (Enabled)
+#		Note: This announcement is displayed for the player only.
+#
+
+StatBooster.OnLoginEnable = 1
+
+#
+#	StatBooster.OnLoginMessage
+#		Description: The chat message to be shown when logging in.
+#
+
+StatBooster.OnLoginMessage = "This server is running the StatBooster module."
+
+########################################
+
+########################################
+#
+#	StatBooster.OnLootItemEnable
+#		Description: Enable/Disable receiving boosted items from looting.
+#					0 - (Disabled)
+#		Default:	1 - (Enabled)
+#
+
+StatBooster.OnLootItemEnable = 1
+
+#
+#	StatBooster.OnQuestRewardItemEnable
+#		Description: Enable/Disable receiving boosted items from quest rewards.
+#					0 - (Disabled)
+#		Default:	1 - (Enabled)
+#
+
+StatBooster.OnQuestRewardItemEnable = 1
+
+#
+#	StatBooster.OnCraftItemEnable
+#		Description: Enable/Disable receiving boosted items from crafting.
+#					0 - (Disabled)
+#		Default:	1 - (Enabled)
+#
+
+StatBooster.OnCraftItemEnable = 1
+
+#
+#	StatBooster.LootItemChance
+#		Description: The percent chance that you will receive a boosted item from looting.
+#		Default:	100
+#		Range:		0-100
+#
+
+StatBooster.LootItemChance = 100
+
+#
+#	StatBooster.QuestRewardChance
+#		Description: The percent chance that you will receive a boosted item from quest rewards.
+#		Default:	100
+#		Range:		0-100
+#
+
+StatBooster.QuestRewardChance = 100
+
+#
+#	StatBooster.CraftItemChance
+#		Description: The percent chance that you will receive a boosted item from crafting.
+#		Default:	100
+#		Range:		0-100
+#
+
+StatBooster.CraftItemChance = 100
+
+########################################
+
+########################################
+#
+#	StatBooster.MinQuality
+#		Description: The minimum quality before an item is considered for boosting.
+#					0 - (Junk)
+#					1 - (Common)
+#		Default:	2 - (Uncommon)
+#					3 - (Rare)
+#					4 - (Epic)
+#					5 - (Legendary)
+#
+
+StatBooster.MinQuality = 2
+
+#
+#	StatBooster.MaxQuality
+#		Description: The maximum quality before an item is considered for boosting.
+#					0 - (Junk)
+#					1 - (Common)
+#					2 - (Uncommon)
+#					3 - (Rare)
+#		Default:	4 - (Epic)
+#					5 - (Legendary)
+#
+
+StatBooster.MaxQuality = 4
+
+########################################
+
+########################################
+#
+#	StatBooster.PlaySoundEnable
+#		Description: Enable/Disable playing sound when receiving boosted item.
+#					0 - (Disabled)
+#		Default:	1 - (Enabled)
+#
+
+StatBooster.PlaySoundEnable = 1
+
+#
+#	StatBooster.SoundId
+#		Description: The sound id to be played when receiving a boosted item.
+#		Default:	120 - (LOOTWINDOWCOINSOUND)
+#		Note: You can find sound ids at https://wotlkdb.com/?sounds where the number in the url is the id.
+#
+
+StatBooster.SoundId = 120
+
+########################################
+
+########################################
+#
+#	StatBooster.SoulbindOnEnchantRoll
+#		Description: Enable/Disable binding enchanted item when won through a roll.
+#		Default:	0 - (Disabled)
+#		            1 - (Enabled)
+#
+
+StatBooster.SoulbindOnEnchantRoll = 0
+
+#
+#	StatBooster.SoulbindOnEnchantLoot
+#		Description: Enable/Disable binding enchanted item looted
+#		Default:	0 - (Disabled)
+#		            1 - (Enabled)
+#
+
+StatBooster.SoulbindOnEnchantLoot = 0
+
+#
+#	StatBooster.SoulbindOnEnchantQuest
+#		Description: Enable/Disable binding enchanted item received from quest
+#		Default:	0 - (Disabled)
+#		            1 - (Enabled)
+#
+
+StatBooster.SoulbindOnEnchantQuest = 0
+
+#
+#	StatBooster.SoulbindOnEnchantCraft
+#		Description: Enable/Disable binding enchanted item crafted
+#		Default:	0 - (Disabled)
+#		            1 - (Enabled)
+#
+
+StatBooster.SoulbindOnEnchantCraft = 0
+
+########################################
+
+########################################
+#
+#	StatBooster.AnnounceBoostEnable
+#		Description: Enable/Disable announcement when receiving a boosted item.
+#					0 - (Disabled)
+#		Default:	1 - (Enabled)
+#		Note: This announcement is displayed for the player only.
+#
+
+StatBooster.AnnounceBoostEnable = 1
+
+#
+#	StatBooster.AnnounceLoot
+#		Description: The chat message to be shown when looting a boosted item.
+#
+
+StatBooster.AnnounceLoot = "You looted a boosted item."
+
+#
+#	StatBooster.AnnounceQuest
+#		Description: The chat message to be shown when receiving a boosted item from quest.
+#
+
+StatBooster.AnnounceQuest = "You received a boosted item."
+
+#
+#	StatBooster.AnnounceCraft
+#		Description: The chat message to be shown when crafting a boosted item.
+#
+
+StatBooster.AnnounceCraft = "You crafted a boosted item."
+
+########################################
+
+########################################
+#
+#	StatBooster.OverwriteEnchantEnable
+#		Description: Enable/Disable enchantment overwriting current enchantment when boosting item.
+#					0 - (Disabled)
+#		Default:	1 - (Enabled)
+#		Note: 	Enchantments on this module use the 'BONUS_ENCHANTMENT_SLOT' to achieve its bonus stats.
+#				Leaving this enabled will overwrite this slot if the item already populates it.
+#				There is a chance to lose enchants on items when gemming an item with a boosted stat.
+#
+
+StatBooster.OverwriteEnchantEnable = 1
+
+########################################
+
+########################################
+#
+#    StatBooster.Reroll.VisualId
+#        Description: The spell id for the visual when an item is successfully re-rolled.
+#        Default:     62015 - Test Visual
+#
+
+StatBooster.Reroll.VisualId = 62015
+
+#
+#    StatBooster.Reroll.AllowOwnedItemsOnly
+#        Description: Enable/disable the re-rolling of owned items only.
+#        Note: This avoids players being able to re-roll other players items.
+#                     0 - Disabled
+#        Default:     1 - Enabled
+#
+
+StatBooster.Reroll.AllowOwnedItemsOnly = 1
+
+#
+#    StatBooster.Reroll.AllowBoostedItemsOnly
+#        Description: Enable/disable the re-rolling of already boosted items only.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+StatBooster.Reroll.AllowBoostedItemsOnly = 0
+
+########################################
