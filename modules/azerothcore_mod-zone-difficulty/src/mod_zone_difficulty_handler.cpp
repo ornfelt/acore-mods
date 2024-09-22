@@ -29,9 +29,7 @@ ZoneDifficulty* ZoneDifficulty::instance()
 void ZoneDifficulty::LoadMapDifficultySettings()
 {
     if (!sZoneDifficulty->IsEnabled)
-    {
         return;
-    }
 
     sZoneDifficulty->Rewards.clear();
     sZoneDifficulty->MythicmodeAI.clear();
@@ -88,6 +86,9 @@ void ZoneDifficulty::LoadMapDifficultySettings()
     EncounterCounter[565] = 2; // Gruul's Lair
     EncounterCounter[544] = 1; // Magtheridon's Lair
     EncounterCounter[532] = 12; // Karazhan
+
+    // Category 11
+    EncounterCounter[564] = 9; // Black Temple
 
     // Icons
     sZoneDifficulty->ItemIcons[ITEMTYPE_MISC] = "|TInterface\\icons\\inv_misc_cape_17:15|t |TInterface\\icons\\inv_misc_gem_topaz_02:15|t |TInterface\\icons\\inv_jewelry_ring_51naxxramas:15|t ";
@@ -155,7 +156,7 @@ void ZoneDifficulty::LoadMapDifficultySettings()
         do
         {
             std::vector<uint32> debuffs;
-            uint32 mapId;
+            uint32 mapId = 0;
             if ((*result)[2].Get<bool>())
             {
                 std::string spellString = (*result)[1].Get<std::string>();
@@ -165,19 +166,13 @@ void ZoneDifficulty::LoadMapDifficultySettings()
                 for (auto token : tokens)
                 {
                     if (token.empty())
-                    {
                         continue;
-                    }
 
-                    uint32 spell;
+                    uint32 spell = 0;
                     if ((spell = Acore::StringTo<uint32>(token).value()))
-                    {
                         debuffs.push_back(spell);
-                    }
                     else
-                    {
                         LOG_ERROR("module", "MOD-ZONE-DIFFICULTY: Disabling buffs for spell '{}' is invalid, skipped.", spell);
-                    }
                 }
                 sZoneDifficulty->DisallowedBuffs[mapId] = debuffs;
             }
@@ -402,6 +397,7 @@ void ZoneDifficulty::LoadMythicmodeScoreData()
 
         } while (result->NextRow());
     }
+
     if (QueryResult result = CharacterDatabase.Query("SELECT `Map`, `BossId`, `PlayerGuid` FROM zone_difficulty_encounter_logs WHERE `Mode` = 64"))
     {
         do
@@ -440,9 +436,7 @@ void ZoneDifficulty::SendWhisperToRaid(std::string message, Creature* creature, 
             if (creature && player)
             {
                 if (mapPlayer->IsInSameGroupWith(player))
-                {
                     creature->Whisper(message, LANG_UNIVERSAL, mapPlayer);
-                }
             }
         });
     }
@@ -554,33 +548,14 @@ void ZoneDifficulty::AddMythicmodeScore(Map* map, uint32 type, uint32 score)
         LOG_ERROR("module", "MOD-ZONE-DIFFICULTY: Wrong value for type: {} in AddMythicmodeScore for map with id {}.", type, map->GetInstanceId());
         return;
     }
-    //LOG_INFO("module", "MOD-ZONE-DIFFICULTY: Called AddMythicmodeScore for map id: {} and type: {}", map->GetId(), type);
-    Map::PlayerList const& PlayerList = map->GetPlayers();
-    for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
+
+    map->DoForAllPlayers([&](Player* player)
     {
-        Player* player = i->GetSource();
-        if (sZoneDifficulty->MythicmodeScore.find(player->GetGUID().GetCounter()) == sZoneDifficulty->MythicmodeScore.end())
-        {
-            sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type] = score;
-        }
-        else if (sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()].find(type) == sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()].end())
-        {
-            sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type] = score;
-        }
-        else
-        {
-            sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type] = sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type] + score;
-        }
-
-        //if (sZoneDifficulty->IsDebugInfoEnabled)
-        //{
-        //    LOG_INFO("module", "MOD-ZONE-DIFFICULTY: Player {} new score: {}", player->GetName(), sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type]);
-        //}
-
+        uint32 previousScore = player->GetPlayerSetting(ModZoneDifficultyString + "score", type).value;
+        player->UpdatePlayerSetting(ModZoneDifficultyString + "score", type, previousScore + score);
         std::string typestring = sZoneDifficulty->GetContentTypeString(type);
-        ChatHandler(player->GetSession()).PSendSysMessage("You have received Mythicmode score %s New score: %i", typestring, sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type]);
-        CharacterDatabase.Execute("REPLACE INTO zone_difficulty_mythicmode_score VALUES({}, {}, {})", player->GetGUID().GetCounter(), type, sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type]);
-    }
+        ChatHandler(player->GetSession()).PSendSysMessage("You have received Mythicmode score {} New score: {}", typestring, previousScore + score);
+    });
 }
 
 /**
@@ -596,8 +571,9 @@ void ZoneDifficulty::DeductMythicmodeScore(Player* player, uint32 type, uint32 s
     {
         LOG_INFO("module", "MOD-ZONE-DIFFICULTY: Reducing score with type {} from player with guid {} by {}.", type, player->GetGUID().GetCounter(), score);
     }
-    sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type] = sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type] - score;
-    CharacterDatabase.Execute("REPLACE INTO zone_difficulty_mythicmode_score VALUES({}, {}, {})", player->GetGUID().GetCounter(), type, sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][type]);
+
+    uint32 val = player->GetPlayerSetting(ModZoneDifficultyString + "score", type).value - score;
+    player->UpdatePlayerSetting(ModZoneDifficultyString + "score", type, val);
 }
 
 /**
@@ -672,13 +648,11 @@ void ZoneDifficulty::SendItem(Player* player, uint32 category, uint32 itemType, 
 bool ZoneDifficulty::IsMythicmodeMap(uint32 mapId)
 {
     if (!sZoneDifficulty->MythicmodeEnable)
-    {
         return false;
-    }
+
     if (sZoneDifficulty->MythicmodeLoot.find(mapId) == sZoneDifficulty->MythicmodeLoot.end())
-    {
         return false;
-    }
+
     return true;
 }
 
@@ -782,7 +756,7 @@ bool ZoneDifficulty::ShouldNerfInDuels(Unit* target)
 int32 ZoneDifficulty::GetLowestMatchingPhase(uint32 mapId, uint32 phaseMask)
 {
     // Check if there is an entry for the mapId at all
-    if (sZoneDifficulty->NerfInfo.find(mapId) != sZoneDifficulty->NerfInfo.end())
+    if (sZoneDifficulty->ShouldNerfMap(mapId))
     {
 
         // Check if 0 is assigned as a phase to cover all phases
@@ -1015,6 +989,9 @@ bool ZoneDifficulty::HasCompletedFullTier(uint32 category, uint32 playerGuid)
     case TYPE_RAID_T4:
         MapList = { 532, 544, 565};
         break;
+    case TYPE_RAID_T6:
+        MapList = { 564 };
+        break;
     default:
         LOG_ERROR("module", "MOD-ZONE-DIFFICULTY: Category without data requested in ZoneDifficulty::HasCompletedFullTier {}", category);
         return false;
@@ -1031,11 +1008,8 @@ bool ZoneDifficulty::HasCompletedFullTier(uint32 category, uint32 playerGuid)
         }
         for (uint8 i = 0; i < sZoneDifficulty->EncounterCounter[mapId]; ++i)
         {
-            //LOG_INFO("module", "MOD-ZONE-DIFFCULTY: Checking HasCompletedFullTier for BossId {}: {}.", i, sZoneDifficulty->Logs[playerGuid][mapId][i]);
             if (!sZoneDifficulty->Logs[playerGuid][mapId][i])
-            {
                 return false;
-            }
         }
     }
     return true;

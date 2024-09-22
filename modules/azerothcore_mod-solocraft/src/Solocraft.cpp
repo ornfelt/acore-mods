@@ -11,6 +11,12 @@
 #include "Chat.h"
 #include <math.h>
 #include <unordered_map>
+#include "ObjectGuid.h"
+#include "utils/Utils.h"
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cstdint>
 
 bool SoloCraftEnable = 1;
 bool SoloCraftAnnounceModule = 1;
@@ -27,6 +33,7 @@ std::unordered_map<uint8, uint32> classes;
 std::unordered_map<uint32, uint32> dungeons;
 std::unordered_map<uint32, float> diff_Multiplier;
 std::unordered_map<uint32, float> diff_Multiplier_Heroics;
+std::vector<uint32_t> SolocraftInstanceExcluded;
 
 float D5 = 1.0;
 float D10 = 1.0;
@@ -304,11 +311,17 @@ public:
         //Unique Raids beyond the heroic and normal versions of themselves
         D649H10 = sConfigMgr->GetOption<float>("Solocraft.ArgentTournamentRaidH10", 10.0);  //Trial of the Crusader 10 Heroic
         D649H25 = sConfigMgr->GetOption<float>("Solocraft.ArgentTournamentRaidH25", 25.0);  //Trial of the Crusader 25 Heroic
+
+        //Get from conf excluded map for Solocraft scaling
+        LoadList(sConfigMgr->GetOption<std::string>("Solocraft.Instance.Excluded", ""), SolocraftInstanceExcluded);
     }
 };
 
 class SolocraftAnnounce : public PlayerScript
 {
+private:
+    std::map<ObjectGuid, bool> playerInInstanceMap;
+
 public:
     SolocraftAnnounce() : PlayerScript("SolocraftAnnounce") {}
 
@@ -328,11 +341,24 @@ public:
             //Remove database entry as the player has logged out
             CharacterDatabase.Execute("DELETE FROM `custom_solocraft_character_stats` WHERE `GUID`={}", player->GetGUID().GetCounter());
         }
+        playerInInstanceMap.erase(player->GetGUID());
     }
 
-    void OnGiveXP(Player* /*player*/, uint32& amount, Unit* /*victim*/, uint8 /*xpSource*/) override
+    void OnMapChanged(Player* player) override
     {
-        if (SolocraftXPBalEnabled)
+        if (player->GetMap()->IsDungeon() || player->GetMap()->IsRaid())
+        {
+            playerInInstanceMap[player->GetGUID()] = true;
+        }
+        else
+        {
+            playerInInstanceMap[player->GetGUID()] = false;
+        }
+    }
+
+    void OnGiveXP(Player* player, uint32& amount, Unit* /*victim*/, uint8 /*xpSource*/) override
+    {
+        if (SolocraftXPBalEnabled && playerInInstanceMap[player->GetGUID()])
         {
             // Decrease Experience based on number of players and difficulty of instance (0 to 100%)
             amount = uint32(amount * SoloCraftXPMod);
@@ -344,6 +370,11 @@ class SolocraftPlayerInstanceHandler : public PlayerScript
 {
 public:
     SolocraftPlayerInstanceHandler() : PlayerScript("SolocraftPlayerInstanceHandler") {}
+    
+    bool IsInSolocraftInstanceExcludedList(uint32 id)
+    {
+        return find(SolocraftInstanceExcluded.begin(), SolocraftInstanceExcluded.end(), id) != SolocraftInstanceExcluded.end();
+    }
 
     void OnMapChanged(Player* player) override
     {
@@ -363,6 +394,11 @@ public:
     {
         if (map)
         {
+            if (IsInSolocraftInstanceExcludedList(map->GetId()))
+            {
+                return 0;
+            }
+
             if (map->Is25ManRaid())
             {
                 if (map->IsHeroic() && map->GetId() == 649)
@@ -519,8 +555,12 @@ public:
     // Apply the player buffs
     void ApplyBuffs(Player* player, Map* map, float difficulty, int dunLevel, int numInGroup, int classBalance)
     {
-        // Check whether to buff the player or check to debuff back to normal
-        if (difficulty != 0)
+        // Check whether to debuff back to normal or check to buff the player
+        if (difficulty == 0 || IsInSolocraftInstanceExcludedList(map->GetId()))
+        {
+            ClearBuffs(player); // Check to revert player back to normal - Moving this here fixed logout and login while in instance buff and debuff issues
+        }
+        else
         {
             std::ostringstream ss;
 
@@ -533,7 +573,7 @@ public:
             }
 
             // If a player is too high level for dungeon don't buff but if in a group will count towards the group offset balancing.
-            if (player->getLevel() <= dunLevel + SolocraftLevelDiff)
+            if (player->GetLevel() <= dunLevel + SolocraftLevelDiff)
             {
 
                 // Get Current members total difficulty offset and if it exceeds the difficulty offset of the dungeon then debuff new group members coming in until all members leave and re-enter. This happens when a player already inside dungeon invite others to the group but the player already has the full difficulty offset.
@@ -628,7 +668,7 @@ public:
                     // Debuffed characters do not get spellpower
                     if (difficulty > 0)
                     {
-                        SpellPowerBonus = static_cast<int>((player->getLevel() * SoloCraftSpellMult) * difficulty);
+                        SpellPowerBonus = static_cast<int>((player->GetLevel() * SoloCraftSpellMult) * difficulty);
                         player->ApplySpellPowerBonus(SpellPowerBonus, true);
                     }
                 }
@@ -691,10 +731,6 @@ public:
                 ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), dunLevel + SolocraftLevelDiff);
                 ClearBuffs(player); // Check to revert player back to normal
             }
-        }
-        else
-        {
-            ClearBuffs(player); // Check to revert player back to normal - Moving this here fixed logout and login while in instance buff and debuff issues
         }
     }
 

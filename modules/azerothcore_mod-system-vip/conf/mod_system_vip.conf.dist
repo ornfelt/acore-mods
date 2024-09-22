@@ -1,0 +1,270 @@
+[worldserver]
+
+########################################
+# SYSTEM VIP CONFIGURATION
+########################################
+#
+#    SystemVip.Announce
+#        Description: Habilita un mensaje de modulo al iniciar sesión.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.Announce = 0
+
+########################################
+#
+#    SystemVip.TimeVip
+#        Description: Tiempo en días para añadir por cada suscripción.
+#        Default:     7
+#
+
+SystemVip.TimeVip = 7
+
+########################################
+#
+#    SystemVip.Token
+#        Description: Token para comprar una suscripción VIP
+#        Default:    29736
+#
+
+SystemVip.Token = 29736
+
+########################################
+#
+#    SystemVip.TokenAmount
+#        Description: Cantidad necesaria.
+#        Default:     10
+#
+
+SystemVip.TokenAmount = 10
+
+########################################
+#
+#    SystemVip.TokenIcon
+#        Description: Ícono del token
+#        Default:     "|TInterface/ICONS/inv_misc_rune_05:15:15:-15:0|t"
+#
+
+SystemVip.TokenIcon = "|TInterface/ICONS/inv_misc_rune_05:15:15:-15:0|t"
+
+########################################
+# SYSTEM VIP ADVANTAGES CONFIGURATION
+########################################
+#
+#    SystemVip.LoginAnnounce
+#        Description: Activa un anuncio especial de bienvenida para usuarios VIP.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.LoginAnnounce = 0
+
+########################################
+#
+#    SystemVip.LoginAnnounceMessage
+#        Description: Mensaje a mostrar en el mensaje de bienvenida. El símbolo %s es el nombre del jugador.
+#        Default:     "Player Vip: %s se ha conectado."
+#
+
+SystemVip.LoginAnnounceMessage = "Player Vip: %s se ha conectado."
+
+########################################
+#
+#    SystemVip.EnableRateCustom
+#        Description: Activa tasas personalizadas para usuarios VIP
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.EnableRateCustom = 0
+
+########################################
+#
+#    SystemVip.RateXP
+#        Description: Define la cantidad de tasa de experiencia para usuarios VIP. Define 1 si deseas una tasa normal.
+#        Default:     1
+#
+
+SystemVip.RateXP = 1
+
+########################################
+#
+#    SystemVip.ProfessionRate
+#        Description: Define la cantidad de tasa de profesiones para usuarios VIP. Define 1 si deseas una tasa normal.
+#        Default:     1
+#
+
+SystemVip.ProfessionRate = 1
+
+########################################
+#
+#    SystemVip.GoldRate
+#        Description: Define la cantidad de tasa de oro para usuarios VIP. Define 1 si deseas una tasa normal.
+#        Default:     1
+#
+
+SystemVip.GoldRate = 1
+
+########################################
+#
+#    SystemVip.HonorRate
+#        Description: Define la cantidad de tasa para ganar honor para usuarios VIP. Define 1 si deseas una tasa normal.
+#        Default:     1
+#
+
+SystemVip.HonorRate = 1
+
+########################################
+#
+#    SystemVip.GhostMount
+#        Description: Activa una montura cuando el jugador VIP muere y se convierte en fantasma
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.GhostMount = 0
+
+########################################
+# SYSTEM VIP PET CONFIGURATION
+########################################
+#
+#    SystemVip.Pet
+#        Description: Activa la mascota para usuarios VIP.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.Pet = 0
+
+########################################
+#
+#    SystemVip.VipZone
+#        Description: Activa un teletransportador hacia una zona especial para usuarios VIP.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.VipZone = 0
+
+########################################
+#
+#    SystemVip.VipZoneCoord
+#        Description: Coordenadas de la zona para usuarios VIP.
+#        Default:     "mapId;position_x;position_y;position_z;orientation"
+#
+
+SystemVip.VipZoneMapId = 571
+SystemVip.VipZoneCoorX = 5804.15
+SystemVip.VipZoneCoorY = 624.771
+SystemVip.VipZoneCoorZ = 647.767
+SystemVip.VipZoneOrien = 1.64
+
+########################################
+#
+#    SystemVip.ArmorRep
+#        Description: "Activa una opción para reparar armaduras de forma gratuita para usuarios VIP.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.ArmorRep = 0
+
+########################################
+#
+#    SystemVip.Bank
+#        Description: "Activa una opción para abrir el banco.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.Bank = 0
+
+########################################
+#
+#    SystemVip.Mail
+#        Description: "Activa una opción para abrir correo.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.Mail = 0
+
+########################################
+#
+#    SystemVip.Buffs
+#        Description: "Activa una opción para buffs.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.Buffs = 0
+
+########################################
+#
+#    SystemVip.BuffIds
+#        Description: IDs de los buffs a lanzar. Deben estar separados por una coma y sin espacios.
+#        Default:     "12312,123123,123123"
+#
+
+SystemVip.BuffIds = "25898,48469,42995,48169,48073,48161,53307,23735,23736,23737,23738,23766,23767,23768,23769"
+
+########################################
+#
+#    SystemVip.Refresh
+#        Description: Activa una opción para restaurar tu vida y maná.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.Refresh = 0
+
+########################################
+#
+#    SystemVip.Sickness
+#        Description: Activa una opción para restaurar tu dolencia.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.Sickness = 0
+
+########################################
+#
+#    SystemVip.Deserter
+#        Description: Activa una opción para quitar la marca de desertor.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.Deserter = 0
+
+########################################
+#
+#    SystemVip.ResetInstance
+#        Description: Activa una opción para reiniciar los registros en mazmorras y bandas.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.ResetInstance = 0
+
+########################################
+#
+#    SystemVip.SaveTeleport
+#        Description: Activa una opción para guardar zonas para teletransporte.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+SystemVip.SaveTeleport = 0
+
+########################################
+#
+#    SystemVip.SaveTeleportAmount
+#        Description: Define la cantidad máxima de zonas permitidas para guardar.
+#        Default:     5
+#
+
+SystemVip.SaveTeleportAmount = 5
+

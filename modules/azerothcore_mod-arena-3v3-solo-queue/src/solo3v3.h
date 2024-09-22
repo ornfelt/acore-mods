@@ -31,11 +31,11 @@ constexpr uint32 BATTLEGROUND_QUEUE_1v1 = 11;
 constexpr BattlegroundQueueTypeId bgQueueTypeId1v1 = (BattlegroundQueueTypeId)((int)BATTLEGROUND_QUEUE_5v5 + 1);
 
 // custom 3v3 Arena
-constexpr uint32 ARENA_TEAM_SOLO_3v3 = 4;
 constexpr uint32 ARENA_TYPE_3v3_SOLO = 4;
+constexpr uint32 ARENA_TEAM_SOLO_3v3 = 4;
 constexpr uint32 ARENA_SLOT_SOLO_3v3 = 4;
 constexpr uint32 BATTLEGROUND_QUEUE_3v3_SOLO = 12;
-constexpr BattlegroundQueueTypeId bgQueueTypeId = (BattlegroundQueueTypeId)((int)BATTLEGROUND_QUEUE_3v3);
+constexpr BattlegroundQueueTypeId bgQueueTypeId = (BattlegroundQueueTypeId)((int) BATTLEGROUND_QUEUE_3v3_SOLO);
 
 
 const uint32 FORBIDDEN_TALENTS_IN_1V1_ARENA[] =
@@ -102,6 +102,16 @@ enum Solo3v3TalentCat
     MELEE = 0,
     RANGE,
     HEALER,
+    MAGE,
+    WARLOCK,
+    PRIEST,
+    ROGUE,
+    DRUID,
+    HUNTER,
+    SHAMAN,
+    DK,
+    PALADIN,
+    WARRIOR,
     MAX_TALENT_CAT
 };
 
@@ -112,11 +122,10 @@ class Solo3v3
 public:
     static Solo3v3* instance();
 
-    void SaveSoloDB(ArenaTeam* team);
     uint32 GetAverageMMR(ArenaTeam* team);
     void CheckStartSolo3v3Arena(Battleground* bg);
     void CleanUp3v3SoloQ(Battleground* bg);
-    bool CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId bracket_id);
+    bool CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId bracket_id, bool isRated);
     void CreateTempArenaTeamForQueue(BattlegroundQueue* queue, ArenaTeam* arenaTeams[]);
 
     // Return false, if player have invested more than 35 talentpoints in a forbidden talenttree.

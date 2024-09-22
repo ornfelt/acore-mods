@@ -92,4 +92,13 @@ Arena1v1.ForbiddenTalentsIDs = "0"
 Arena1v1.ArenaSlotID = 3
 
 #
+#   Arena1v1.EnableCommand
+#       Description: If enabled, it allows to run .q1v1 rated/unrated
+#       Default: true
+#       Value:   true
+#                false
+
+Arena1v1.EnableCommand = 1
+
+#
 ###################################################################################################

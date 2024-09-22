@@ -342,7 +342,7 @@ void StatBoostMgr::MakeSoulbound(Item* item, Player* player)
 {
     auto itemTemplate = item->GetTemplate();
 
-    if (itemTemplate->Bonding == BIND_WHEN_EQUIPED)
+    if (itemTemplate->Bonding == BIND_WHEN_EQUIPPED)
     {
         item->SetState(ITEM_CHANGED, player);
         item->SetBinding(true);

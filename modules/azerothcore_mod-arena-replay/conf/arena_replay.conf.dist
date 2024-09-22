@@ -1,0 +1,53 @@
+#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+#
+
+[worldserver]
+
+########################################
+# ArenaReplay
+########################################
+#
+#    ArenaReplay.Enable
+#        Description: Enable module
+#        Default:     1 - Enabled
+#                     0 - Disabled
+#
+#    ArenaReplay.DeleteReplaysAfterDays
+#        Description: delete replays after specific days
+#        Default:     30 - Enabled
+#                     0 - Disabled, don't delete
+#
+#    ArenaReplay.DeleteSavedReplays
+#        Description: delete saved replays or keep them
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+#    ArenaReplay.ValidArenaDuration
+#        Description: Save the replay only if the match lasted >= seconds
+#        Default:     75 - in seconds (60 arena StartDelayTime plus 15 seconds)
+#                     0 - Disabled, save always
+#
+#    ArenaReplay.SaveUnratedArenas
+#        Description: Save the replay of Skirmish arenas
+#        Default:     1 - Enabled
+#                     0 - Disabled
+#
+#    ArenaReplay.SaveBattlegrounds
+#        Description: Save the replay of battlegrounds
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ArenaReplay.Enable = 1
+ArenaReplay.DeleteReplaysAfterDays = 30
+ArenaReplay.DeleteSavedReplays = 0
+ArenaReplay.ValidArenaDuration = 75
+ArenaReplay.SaveUnratedArenas = 1
+ArenaReplay.SaveBattlegrounds = 0
+
+ArenaReplay.1v1.Enable = 0
+ArenaReplay.1v1.ArenaType = 1
+
+ArenaReplay.3v3soloQ.Enable = 0
+ArenaReplay.3v3soloQ.ArenaType = 4

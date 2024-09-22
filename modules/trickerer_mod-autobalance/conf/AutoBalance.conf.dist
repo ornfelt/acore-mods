@@ -844,7 +844,8 @@ AutoBalance.LevelScaling.DynamicLevel.DistanceCheck.PerInstance="189 500"
 #        to have stats as near possible to the official ones.
 #
 #        Default:     0 (1 = ON, 0 = OFF)
-AutoBalance.LevelScaling.EndGameBoost = 0        # setting to 1 does not do anything
+#        setting to 1 does not do anything
+AutoBalance.LevelScaling.EndGameBoost = 0
 
 ##########################
 #

@@ -83,7 +83,7 @@ bool StatBoosterConfig::EnchantScorePool::Load()
             }
         } while (qResult->NextRow());
 
-        LOG_INFO("module", Acore::StringFormatFmt(">> Loaded {} stat booster enchant scores", enchantCount));
+        LOG_INFO("module", Acore::StringFormat(">> Loaded {} stat booster enchant scores", enchantCount));
     }
     catch (std::exception ex)
     {
@@ -172,7 +172,7 @@ bool StatBoosterConfig::EnchantPool::Load()
             }
         } while (qResult->NextRow());
 
-        LOG_INFO("module", Acore::StringFormatFmt(">> Loaded {} stat booster enchant definitions", enchantCount));
+        LOG_INFO("module", Acore::StringFormat(">> Loaded {} stat booster enchant definitions", enchantCount));
     }
     catch (std::exception ex)
     {

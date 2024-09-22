@@ -26,6 +26,16 @@
 #include "Battleground.h"
 #include "solo3v3.h"
 
+enum Npc3v3Actions {
+    NPC_3v3_ACTION_CREATE_ARENA_TEAM = 1,
+    NPC_3v3_ACTION_JOIN_QUEUE_ARENA_RATED = 2,
+    NPC_3v3_ACTION_LEAVE_QUEUE = 3,
+    NPC_3v3_ACTION_GET_STATISTICS = 4,
+    NPC_3v3_ACTION_DISBAND_ARENATEAM = 5,
+    NPC_3v3_ACTION_JOIN_QUEUE_ARENA_UNRATED = 6,
+    NPC_3v3_ACTION_SCRIPT_INFO = 8
+};
+
 class NpcSolo3v3 : public CreatureScript
 {
 public:
@@ -37,13 +47,12 @@ public:
     void Initialize();
     bool OnGossipHello(Player* player, Creature* creature) override;
     bool OnGossipSelect(Player* player, Creature* creature, uint32 /*sender*/, uint32 action) override;
-
-private:
     bool ArenaCheckFullEquipAndTalents(Player* player);
     bool JoinQueueArena(Player* player, Creature* creature, bool isRated);
     bool CreateArenateam(Player* player, Creature* creature);
-    void fetchQueueList();
 
+private:
+    void fetchQueueList();
     int cache3v3Queue[MAX_TALENT_CAT];
     uint32 lastFetchQueueList;
 };
@@ -53,8 +62,14 @@ class Solo3v3BG : public AllBattlegroundScript
 public:
     Solo3v3BG() : AllBattlegroundScript("Solo3v3_BG") {}
 
+    uint32 oldTeamRatingAlliance;
+    uint32 oldTeamRatingHorde;
+
     void OnQueueUpdate(BattlegroundQueue* queue, uint32 /*diff*/, BattlegroundTypeId bgTypeId, BattlegroundBracketId bracket_id, uint8 arenaType, bool isRated, uint32 /*arenaRatedTeamId*/) override;
     void OnBattlegroundUpdate(Battleground* bg, uint32 /*diff*/) override;
+    bool OnQueueUpdateValidity(BattlegroundQueue* /* queue */, uint32 /*diff*/, BattlegroundTypeId /* bgTypeId */, BattlegroundBracketId /* bracket_id */, uint8 arenaType, bool /* isRated */, uint32 /*arenaRatedTeamId*/) override;
+    void OnBattlegroundDestroy(Battleground* bg) override;
+    void OnBattlegroundEndReward(Battleground* bg, Player* player, TeamId /* winnerTeamId */) override;
 };
 
 class ConfigLoader3v3Arena : public WorldScript
@@ -82,51 +97,46 @@ public:
     PlayerScript3v3Arena() : PlayerScript("player_script_3v3_arena") {}
 
     void OnLogin(Player* pPlayer) override;
-    void GetCustomGetArenaTeamId(const Player* player, uint8 slot, uint32& id) const override;
-    void GetCustomArenaPersonalRating(const Player* player, uint8 slot, uint32& rating) const override;
+    void OnGetArenaPersonalRating(Player* player, uint8 slot, uint32& rating) override;
     void OnGetMaxPersonalArenaRatingRequirement(const Player* player, uint32 minslot, uint32& maxArenaRating) const override;
+    void OnGetArenaTeamId(Player* player, uint8 slot, uint32& result) override;
+    bool NotSetArenaTeamInfoField(Player* player, uint8 slot, ArenaTeamInfoType type, uint32 value) override;
+    bool CanBattleFieldPort(Player* player, uint8 arenaType, BattlegroundTypeId BGTypeID, uint8 action) override;
 };
 
-void AddSC_Solo_3v3_Arena()
+class Arena_SC : public ArenaScript
 {
-    // ArenaSlotByType
-    if (!ArenaTeam::ArenaSlotByType.count(ARENA_TEAM_1v1))
-        ArenaTeam::ArenaSlotByType[ARENA_TEAM_1v1] = ARENA_SLOT_1v1;
+public:
+    Arena_SC() : ArenaScript("Arena_SC") { }
 
-    if (!ArenaTeam::ArenaSlotByType.count(ARENA_TEAM_SOLO_3v3))
-        ArenaTeam::ArenaSlotByType[ARENA_TEAM_SOLO_3v3] = ARENA_SLOT_SOLO_3v3;
+    bool CanAddMember(ArenaTeam* team, ObjectGuid /* playerGuid */) override
+    {
+        if (!team)
+            return false;
 
-    // ArenaReqPlayersForType
-    if (!ArenaTeam::ArenaReqPlayersForType.count(ARENA_TYPE_1v1))
-        ArenaTeam::ArenaReqPlayersForType[ARENA_TYPE_1v1] = 2;
+        if (!team->GetMembersSize())
+            return true;
 
-    if (!ArenaTeam::ArenaReqPlayersForType.count(ARENA_TYPE_3v3_SOLO))
-        ArenaTeam::ArenaReqPlayersForType[ARENA_TYPE_3v3_SOLO] = 6;
+        if (team->GetType() == ARENA_TEAM_SOLO_3v3)
+            return false;
 
-    // queueToBg
-    if (!BattlegroundMgr::queueToBg.count(BATTLEGROUND_QUEUE_1v1))
-        BattlegroundMgr::queueToBg[BATTLEGROUND_QUEUE_1v1] = BATTLEGROUND_AA;
+        return true;
+    }
 
-    if (!BattlegroundMgr::queueToBg.count(BATTLEGROUND_QUEUE_3v3_SOLO))
-        BattlegroundMgr::queueToBg[BATTLEGROUND_QUEUE_3v3_SOLO] = BATTLEGROUND_AA;
+    void OnGetPoints(ArenaTeam* team, uint32 /* memberRating */, float& points) override
+    {
+        if (!team)
+            return;
 
-    // ArenaTypeToQueue
-    if (!BattlegroundMgr::ArenaTypeToQueue.count(ARENA_TYPE_1v1))
-        BattlegroundMgr::ArenaTypeToQueue[ARENA_TYPE_1v1] = (BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_1v1;
+        if (team->GetType() == ARENA_TEAM_SOLO_3v3)
+            points *= sConfigMgr->GetOption<float>("Solo.3v3.ArenaPointsMulti", 0.88f);
+    }
 
-    if (!BattlegroundMgr::ArenaTypeToQueue.count(ARENA_TYPE_3v3_SOLO))
-        BattlegroundMgr::ArenaTypeToQueue[ARENA_TYPE_3v3_SOLO] = (BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_3v3_SOLO;
+    bool CanSaveToDB(ArenaTeam* team) override
+    {
+        if (team->GetId() >= MAX_ARENA_TEAM_ID)
+            return false;
 
-    // QueueToArenaType
-    if (!BattlegroundMgr::QueueToArenaType.count(BATTLEGROUND_QUEUE_1v1))
-        BattlegroundMgr::QueueToArenaType[BATTLEGROUND_QUEUE_1v1] = (ArenaType)ARENA_TYPE_1v1;
-
-    if (!BattlegroundMgr::QueueToArenaType.count(BATTLEGROUND_QUEUE_3v3_SOLO))
-        BattlegroundMgr::QueueToArenaType[BATTLEGROUND_QUEUE_3v3_SOLO] = (ArenaType)ARENA_TYPE_3v3_SOLO;
-
-    new NpcSolo3v3();
-    new Solo3v3BG();
-    new Team3v3arena();
-    new ConfigLoader3v3Arena();
-    new PlayerScript3v3Arena();
-}
+        return true;
+    }
+};

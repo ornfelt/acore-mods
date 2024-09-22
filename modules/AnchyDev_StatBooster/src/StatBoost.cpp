@@ -318,11 +318,11 @@ bool StatBoosterCommands::HandleSBAddItemCommand(ChatHandler* handler, uint32 it
 
     if (result)
     {
-        handler->SendSysMessage(Acore::StringFormatFmt("Added boosted item '{}' to '{}'.", itemId, player->GetPlayerName()));
+        handler->SendSysMessage(Acore::StringFormat("Added boosted item '{}' to '{}'.", itemId, player->GetPlayerName()));
     }
     else
     {
-        handler->SendSysMessage(Acore::StringFormatFmt("Added item '{}' to '{}'.", itemId, player->GetPlayerName()));
+        handler->SendSysMessage(Acore::StringFormat("Added item '{}' to '{}'.", itemId, player->GetPlayerName()));
     }
     
     player->SendNewItem(item, count, true, false, false, true);

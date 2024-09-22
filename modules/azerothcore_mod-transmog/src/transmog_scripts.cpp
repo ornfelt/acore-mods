@@ -21,9 +21,12 @@ Cant transmogrify rediculus items // Foereaper: would be fun to stab people with
 */
 #include <unordered_map>
 #include "Transmogrification.h"
+#include "Chat.h"
 #include "ScriptedCreature.h"
 #include "ItemTemplate.h"
 #include "DatabaseEnv.h"
+#include "WorldPacket.h"
+#include "Opcodes.h"
 
 #define sT  sTransmogrification
 #define GTS session->GetAcoreString // dropped translation support, no one using?
@@ -330,6 +333,11 @@ std::unordered_map<std::string, const std::unordered_map<LocaleConstant, std::st
     {"added_appearance", &TRANSMOG_TEXT_ADDED_APPEARANCE}
 };
 
+const uint32 FALLBACK_HIDE_ITEM_VENDOR_ID   = 9172; //Invisibility potion
+const uint32 FALLBACK_REMOVE_TMOG_VENDOR_ID = 1049; //Tablet of Purge
+const uint32 CUSTOM_HIDE_ITEM_VENDOR_ID     = 57575;//Custom Hide Item item
+const uint32 CUSTOM_REMOVE_TMOG_VENDOR_ID   = 57576;//Custom Remove Transmog item
+
 std::string GetLocaleText(LocaleConstant locale, const std::string& titleType) {
     auto textMapIt = textMaps.find(titleType);
     if (textMapIt != textMaps.end()) {
@@ -341,6 +349,119 @@ std::string GetLocaleText(LocaleConstant locale, const std::string& titleType) {
     }
 
     return "";
+}
+
+uint32 GetTransmogPrice (ItemTemplate const* targetItem)
+{
+    uint32 price = sT->GetSpecialPrice(targetItem);
+    price *= sT->GetScaledCostModifier();
+    price += sT->GetCopperCost();
+    return price;
+}
+
+bool ValidForTransmog (Player* player, Item* target, Item* source, bool hasSearch, std::string searchTerm)
+{
+    if (!target || !source || !player) return false;
+    ItemTemplate const* targetTemplate = target->GetTemplate();
+    ItemTemplate const* sourceTemplate = source->GetTemplate();
+
+    if (!sT->CanTransmogrifyItemWithItem(player, targetTemplate, sourceTemplate))
+        return false;
+    if (sT->GetFakeEntry(target->GetGUID()) == source->GetEntry())
+        return false;
+    if (hasSearch && sourceTemplate->Name1.find(searchTerm) == std::string::npos)
+        return false;
+    return true;
+}
+
+bool CmpTmog (Item* i1, Item* i2)
+{
+    const ItemTemplate* i1t = i1->GetTemplate();
+    const ItemTemplate* i2t = i2->GetTemplate();
+    const int q1 = 7-i1t->Quality;
+    const int q2 = 7-i2t->Quality;
+    return std::tie(q1, i1t->Name1) < std::tie(q2, i2t->Name1);
+}
+
+std::vector<Item*> GetValidTransmogs (Player* player, Item* target, bool hasSearch, std::string searchTerm)
+{
+    std::vector<Item*> allowedItems;
+    if (!target) return allowedItems;
+
+    if (sT->GetUseCollectionSystem())
+    {
+        uint32 accountId = player->GetSession()->GetAccountId();
+        if (sT->collectionCache.find(accountId) == sT->collectionCache.end())
+            return allowedItems;
+
+        for (uint32 itemId : sT->collectionCache[accountId])
+        {
+            if (!sObjectMgr->GetItemTemplate(itemId))
+                continue;
+            Item* srcItem = Item::CreateItem(itemId, 1, 0);
+            if (ValidForTransmog(player, target, srcItem, hasSearch, searchTerm))
+                allowedItems.push_back(srcItem);
+        }
+    }
+    else
+    {
+        for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+        {
+            Item* srcItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+            if (ValidForTransmog(player, target, srcItem, hasSearch, searchTerm))
+                allowedItems.push_back(srcItem);
+        }
+        for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+        {
+            Bag* bag = player->GetBagByPos(i);
+            if (!bag)
+                continue;
+            for (uint32 j = 0; j < bag->GetBagSize(); ++j)
+            {
+                Item* srcItem = player->GetItemByPos(i, j);
+                if (ValidForTransmog(player, target, srcItem, hasSearch, searchTerm))
+                    allowedItems.push_back(srcItem);
+            }
+        }
+    }
+
+    if (sConfigMgr->GetOption<bool>("Transmogrification.EnableSortByQualityAndName", true)) {
+        sort(allowedItems.begin(), allowedItems.end(), CmpTmog);
+    }
+
+    return allowedItems;
+}
+
+void PerformTransmogrification (Player* player, uint32 itemEntry, uint32 cost)
+{
+    uint8 slot = sT->selectionCache[player->GetGUID()];
+    WorldSession* session = player->GetSession();
+    if (!player->HasEnoughMoney(cost))
+    {
+        ChatHandler(session).SendNotification(LANG_ERR_TRANSMOG_NOT_ENOUGH_MONEY);
+        return;
+    }
+    TransmogAcoreStrings res = sT->Transmogrify(player, itemEntry, slot);
+    if (res == LANG_ERR_TRANSMOG_OK)
+        session->SendAreaTriggerMessage("%s",GTS(LANG_ERR_TRANSMOG_OK));
+    else
+        ChatHandler(session).SendNotification(res);
+}
+
+void RemoveTransmogrification (Player* player)
+{
+    uint8 slot = sT->selectionCache[player->GetGUID()];
+    WorldSession* session = player->GetSession();
+    if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
+    {
+        if (sT->GetFakeEntry(newItem->GetGUID()))
+        {
+            sT->DeleteFakeEntry(player, slot, newItem);
+            session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
+        }
+        else
+            ChatHandler(session).SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
+    }
 }
 
 class npc_transmogrifier : public CreatureScript
@@ -411,13 +532,18 @@ public:
         // Next page
         if (sender > EQUIPMENT_SLOT_END + 10)
         {
-            ShowTransmogItems(player, creature, action, sender);
+            ShowTransmogItemsInGossipMenu(player, creature, action, sender);
             return true;
         }
         switch (sender)
         {
             case EQUIPMENT_SLOT_END: // Show items you can use
-                ShowTransmogItems(player, creature, action, sender);
+                sT->selectionCache[player->GetGUID()] = action;
+
+                if (sT->GetUseVendorInterface())
+                    ShowTransmogItemsInFakeVendor(player, creature, action);
+                else
+                    ShowTransmogItemsInGossipMenu(player, creature, action, sender);
                 break;
             case EQUIPMENT_SLOT_END + 1: // Main menu
                 OnGossipHello(player, creature);
@@ -442,21 +568,12 @@ public:
                     CharacterDatabase.CommitTransaction(trans);
                 }
                 else
-                    session->SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
+                    ChatHandler(session).SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
                 OnGossipHello(player, creature);
             } break;
             case EQUIPMENT_SLOT_END + 3: // Remove Transmogrification from single item
             {
-                if (Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, action))
-                {
-                    if (sT->GetFakeEntry(newItem->GetGUID()))
-                    {
-                        sT->DeleteFakeEntry(player, action, newItem);
-                        session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
-                    }
-                    else
-                        session->SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
-                }
+                RemoveTransmogrification(player);
                 OnGossipSelect(player, creature, EQUIPMENT_SLOT_END, action);
             } break;
     #ifdef PRESETS
@@ -575,25 +692,7 @@ public:
                     OnGossipHello(player, creature);
                     return true;
                 }
-                // sender = slot, action = display
-                if (sT->GetUseCollectionSystem())
-                {
-                    TransmogAcoreStrings res = sT->Transmogrify(player, action, sender);
-                    if (res == LANG_ERR_TRANSMOG_OK)
-                        session->SendAreaTriggerMessage("%s",GTS(LANG_ERR_TRANSMOG_OK));
-                    else
-                        session->SendNotification(res);
-                }
-                else
-                {
-                    TransmogAcoreStrings res = sT->Transmogrify(player, ObjectGuid::Create<HighGuid::Item>(action), sender);
-                    if (res == LANG_ERR_TRANSMOG_OK)
-                        session->SendAreaTriggerMessage("%s",GTS(LANG_ERR_TRANSMOG_OK));
-                    else
-                        session->SendNotification(res);
-                }
-                // OnGossipSelect(player, creature, EQUIPMENT_SLOT_END, sender);
-                // ShowTransmogItems(player, creature, sender);
+                PerformTransmogrification(player, action, sender);
                 CloseGossipMenuFor(player); // Wait for SetMoney to get fixed, issue #10053
             } break;
         }
@@ -624,7 +723,7 @@ public:
         }
         std::string name(code);
         if (name.find('"') != std::string::npos || name.find('\\') != std::string::npos)
-            player->GetSession()->SendNotification(LANG_PRESET_ERR_INVALID_NAME);
+            ChatHandler(player->GetSession()).SendNotification(LANG_PRESET_ERR_INVALID_NAME);
         else
         {
             for (uint8 presetID = 0; presetID < sT->GetMaxSets(); ++presetID) // should never reach over max
@@ -661,7 +760,7 @@ public:
                 cost += sT->GetSetCopperCost();
                 if (!player->HasEnoughMoney(cost))
                 {
-                    player->GetSession()->SendNotification(LANG_ERR_TRANSMOG_NOT_ENOUGH_MONEY);
+                    ChatHandler(player->GetSession()).SendNotification(LANG_ERR_TRANSMOG_NOT_ENOUGH_MONEY);
                     break;
                 }
 
@@ -684,174 +783,206 @@ public:
     }
 #endif
 
-    void ShowTransmogItems(Player* player, Creature* creature, uint8 slot, uint16 gossipPageNumber) // Only checks bags while can use an item from anywhere in inventory
+    void ShowTransmogItemsInGossipMenu(Player* player, Creature* creature, uint8 slot, uint16 gossipPageNumber) // Only checks bags while can use an item from anywhere in inventory
     {
         WorldSession* session = player->GetSession();
         LocaleConstant locale = session->GetSessionDbLocaleIndex();
         Item* oldItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
-        bool sendGossip = true;
         bool hasSearchString;
+
+        uint16 pageNumber = 0;
+        uint32 startValue = 0;
+        uint32 endValue = MAX_OPTIONS - 4;
+        bool lastPage = true;
+        if (gossipPageNumber > EQUIPMENT_SLOT_END + 10)
+        {
+            pageNumber = gossipPageNumber - EQUIPMENT_SLOT_END - 10;
+            startValue = (pageNumber * (MAX_OPTIONS - 2));
+            endValue = (pageNumber + 1) * (MAX_OPTIONS - 2) - 1;
+        }
+
         if (oldItem)
         {
-            uint32 price = sT->GetSpecialPrice(oldItem->GetTemplate());
-            price *= sT->GetScaledCostModifier();
-            price += sT->GetCopperCost();
+            uint32 price = GetTransmogPrice(oldItem->GetTemplate());
             std::ostringstream ss;
             ss << std::endl;
             if (sT->GetRequireToken())
                 ss << std::endl << std::endl << sT->GetTokenAmount() << " x " << sT->GetItemLink(sT->GetTokenEntry(), session);
             std::string lineEnd = ss.str();
 
-            if (sT->GetUseCollectionSystem())
-            {
-                sendGossip = false;
+            std::unordered_map<uint32, std::string>::iterator searchStringIterator = sT->searchStringByPlayer.find(player->GetGUID().GetCounter());
+            hasSearchString = !(searchStringIterator == sT->searchStringByPlayer.end());
+            std::string searchDisplayValue(hasSearchString ? searchStringIterator->second : GetLocaleText(locale, "search"));
+            std::vector<Item*> allowedItems = GetValidTransmogs(player, oldItem, hasSearchString, searchDisplayValue);
 
-                uint16 pageNumber = 0;
-                uint32 startValue = 0;
-                uint32 endValue = MAX_OPTIONS - 4;
-                bool lastPage = false;
-                if (gossipPageNumber > EQUIPMENT_SLOT_END + 10)
+            if (allowedItems.size() > 0)
+            {
+                lastPage = false;
+                // Offset values to add Search gossip item
+                if (pageNumber == 0)
                 {
-                    pageNumber = gossipPageNumber - EQUIPMENT_SLOT_END - 10;
-                    startValue = (pageNumber * (MAX_OPTIONS - 2));
-                    endValue = (pageNumber + 1) * (MAX_OPTIONS - 2) - 1;
-                }
-                uint32 accountId = player->GetSession()->GetAccountId();
-                if (sT->collectionCache.find(accountId) != sT->collectionCache.end())
-                {
-                    std::unordered_map<uint32, std::string>::iterator searchStringIterator = sT->searchStringByPlayer.find(player->GetGUID().GetCounter());
-                    hasSearchString = !(searchStringIterator == sT->searchStringByPlayer.end());
-                    std::string searchDisplayValue(hasSearchString ? searchStringIterator->second : GetLocaleText(locale, "search"));
-                    // Offset values to add Search gossip item
-                    if (pageNumber == 0)
+                    if (hasSearchString)
                     {
-                        if (hasSearchString)
-                        {
-                            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(30620, 30, 30, -18, 0) + GetLocaleText(locale, "searching_for") + searchDisplayValue, slot + 1, 0, GetLocaleText(locale, "search_for_item"), 0, true);
-                        }
-                        else
-                        {
-                            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(30620, 30, 30, -18, 0) + GetLocaleText(locale, "search"), slot + 1, 0, GetLocaleText(locale, "search_for_item"), 0, true);
-                        }
+                        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(30620, 30, 30, -18, 0) + GetLocaleText(locale, "searching_for") + searchDisplayValue, slot + 1, 0, GetLocaleText(locale, "search_for_item"), 0, true);
                     }
                     else
                     {
+                        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(30620, 30, 30, -18, 0) + GetLocaleText(locale, "search"), slot + 1, 0, GetLocaleText(locale, "search_for_item"), 0, true);
+                    }
+                }
+                else
+                {
+                    startValue--;
+                }
+                if (sT->GetAllowHiddenTransmog())
+                {
+                    // Offset the start and end values to make space for invisible item entry
+                    endValue--;
+                    if (pageNumber != 0)
+                    {
                         startValue--;
                     }
-                    std::vector<Item*> allowedItems;
-                    if (sT->GetAllowHiddenTransmog())
+                    else
                     {
-                        // Offset the start and end values to make space for invisible item entry
-                        endValue--;
-                        if (pageNumber != 0)
-                        {
-                            startValue--;
-                        }
-                        else
-                        {
-                            // Add invisible item entry
-                            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/inv_misc_enggizmos_27:30:30:-18:0|t" + GetLocaleText(locale, "hide_slot"), slot, UINT_MAX, GetLocaleText(locale, "confirm_hide_item") + lineEnd, 0, false);
-                        }
-                    }
-                    for (uint32 newItemEntryId : sT->collectionCache[accountId]) {
-                        if (!sObjectMgr->GetItemTemplate(newItemEntryId))
-                            continue;
-                        Item* newItem = Item::CreateItem(newItemEntryId, 1, 0);
-                        if (!newItem)
-                            continue;
-                        if (!sT->CanTransmogrifyItemWithItem(player, oldItem->GetTemplate(), newItem->GetTemplate()))
-                            continue;
-                        if (sT->GetFakeEntry(oldItem->GetGUID()) == newItem->GetEntry())
-                            continue;
-                        if (hasSearchString && newItem->GetTemplate()->Name1.find(searchDisplayValue) == std::string::npos)
-                            continue;
-                        allowedItems.push_back(newItem);
-                    }
-                    for (uint32 i = startValue; i <= endValue; i++)
-                    {
-                        if (allowedItems.empty() || i > allowedItems.size() - 1)
-                        {
-                            lastPage = true;
-                            break;
-                        }
-                        Item* newItem = allowedItems.at(i);
-                        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(newItem->GetEntry(), 30, 30, -18, 0) + sT->GetItemLink(newItem, session), slot, newItem->GetEntry(), GetLocaleText(locale, "confirm_use_item") + sT->GetItemIcon(newItem->GetEntry(), 40, 40, -15, -10) + sT->GetItemLink(newItem, session) + lineEnd, price, false);
+                        // Add invisible item entry
+                        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/inv_misc_enggizmos_27:30:30:-18:0|t" + GetLocaleText(locale, "hide_slot"), slot, UINT_MAX, GetLocaleText(locale, "confirm_hide_item") + lineEnd, 0, false);
                     }
                 }
-                if (gossipPageNumber == EQUIPMENT_SLOT_END + 11)
+                for (uint32 i = startValue; i <= endValue; i++)
                 {
-                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, GetLocaleText(locale, "previous_page"), EQUIPMENT_SLOT_END, slot);
-                    if (!lastPage)
+                    if (allowedItems.empty() || i > allowedItems.size() - 1)
                     {
-                        AddGossipItemFor(player, GOSSIP_ICON_CHAT, GetLocaleText(locale, "next_page"), gossipPageNumber + 1, slot);
-                    }
-                }
-                else if (gossipPageNumber > EQUIPMENT_SLOT_END + 11)
-                {
-                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, GetLocaleText(locale, "previous_page"), gossipPageNumber - 1, slot);
-                    if (!lastPage)
-                    {
-                        AddGossipItemFor(player, GOSSIP_ICON_CHAT, GetLocaleText(locale, "next_page"), gossipPageNumber + 1, slot);
-                    }
-                }
-                else if (!lastPage)
-                {
-                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Next Page", EQUIPMENT_SLOT_END + 11, slot);
-                }
-
-                AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Enchant_Disenchant:30:30:-18:0|t" + GetLocaleText(locale, "remove_transmog"), EQUIPMENT_SLOT_END + 3, slot, GetLocaleText(locale, "remove_transmog_slot"), 0, false);
-                AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/PaperDollInfoFrame/UI-GearManager-Undo:30:30:-18:0|t" + GetLocaleText(locale, "update_menu"), EQUIPMENT_SLOT_END, slot);
-                AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|t" + GetLocaleText(locale, "back"), EQUIPMENT_SLOT_END + 1, 0);
-                SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
-            }
-            else
-            {
-                uint32 limit = 0;
-                for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
-                {
-                    if (limit > MAX_OPTIONS)
+                        lastPage = true;
                         break;
-                    Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i);
-                    if (!newItem)
-                        continue;
-                    if (!sT->CanTransmogrifyItemWithItem(player, oldItem->GetTemplate(), newItem->GetTemplate()))
-                        continue;
-                    if (sT->GetFakeEntry(oldItem->GetGUID()) == newItem->GetEntry())
-                        continue;
-                    ++limit;
-                    AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(newItem->GetEntry(), 30, 30, -18, 0) + sT->GetItemLink(newItem, session), slot, newItem->GetGUID().GetCounter(), GetLocaleText(locale, "confirm_use_item") + sT->GetItemIcon(newItem->GetEntry(), 40, 40, -15, -10) + sT->GetItemLink(newItem, session) + lineEnd, price, false);
-                }
-
-                for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
-                {
-                    Bag* bag = player->GetBagByPos(i);
-                    if (!bag)
-                        continue;
-                    for (uint32 j = 0; j < bag->GetBagSize(); ++j)
-                    {
-                        if (limit > MAX_OPTIONS)
-                            break;
-                        Item* newItem = player->GetItemByPos(i, j);
-                        if (!newItem)
-                            continue;
-                        if (!sT->CanTransmogrifyItemWithItem(player, oldItem->GetTemplate(), newItem->GetTemplate()))
-                            continue;
-                        if (sT->GetFakeEntry(oldItem->GetGUID()) == newItem->GetEntry())
-                            continue;
-                        ++limit;
-                        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(newItem->GetEntry(), 30, 30, -18, 0) + sT->GetItemLink(newItem, session), slot, newItem->GetGUID().GetCounter(), GetLocaleText(locale, "confirm_use_item") + sT->GetItemIcon(newItem->GetEntry(), 40, 40, -15, -10) + sT->GetItemLink(newItem, session) + ss.str(), price, false);
                     }
+                    Item* newItem = allowedItems.at(i);
+                    AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(newItem->GetEntry(), 30, 30, -18, 0) + sT->GetItemLink(newItem, session), slot, newItem->GetEntry(), GetLocaleText(locale, "confirm_use_item") + sT->GetItemIcon(newItem->GetEntry(), 40, 40, -15, -10) + sT->GetItemLink(newItem, session) + lineEnd, price, false);
                 }
             }
-        }
+            if (gossipPageNumber == EQUIPMENT_SLOT_END + 11)
+            {
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, GetLocaleText(locale, "previous_page"), EQUIPMENT_SLOT_END, slot);
+                if (!lastPage)
+                {
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, GetLocaleText(locale, "next_page"), gossipPageNumber + 1, slot);
+                }
+            }
+            else if (gossipPageNumber > EQUIPMENT_SLOT_END + 11)
+            {
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, GetLocaleText(locale, "previous_page"), gossipPageNumber - 1, slot);
+                if (!lastPage)
+                {
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, GetLocaleText(locale, "next_page"), gossipPageNumber + 1, slot);
+                }
+            }
+            else if (!lastPage)
+            {
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Next Page", EQUIPMENT_SLOT_END + 11, slot);
+            }
 
-        if (sendGossip)
-        {
             AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Enchant_Disenchant:30:30:-18:0|t" + GetLocaleText(locale, "remove_transmog"), EQUIPMENT_SLOT_END + 3, slot, GetLocaleText(locale, "remove_transmog_slot"), 0, false);
             AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/PaperDollInfoFrame/UI-GearManager-Undo:30:30:-18:0|t" + GetLocaleText(locale, "update_menu"), EQUIPMENT_SLOT_END, slot);
-            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|t" + GetLocaleText(locale, "back"), EQUIPMENT_SLOT_END + 1, 0);
-            SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
         }
+        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|t" + GetLocaleText(locale, "back"), EQUIPMENT_SLOT_END + 1, 0);
+        SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
+    }
+
+    static std::vector<ItemTemplate const*> GetSpoofedVendorItems (Item* target)
+    {
+        std::vector<ItemTemplate const*> spoofedItems;
+        uint32 existingTransmog = sT->GetFakeEntry(target->GetGUID());
+        if (sT->AllowHiddenTransmog && !existingTransmog)
+        {
+            ItemTemplate const* _hideSlotButton = sObjectMgr->GetItemTemplate(CUSTOM_HIDE_ITEM_VENDOR_ID);
+            if (_hideSlotButton)
+                spoofedItems.push_back(_hideSlotButton);
+            else
+            {
+                _hideSlotButton = sObjectMgr->GetItemTemplate(FALLBACK_HIDE_ITEM_VENDOR_ID);
+                spoofedItems.push_back(_hideSlotButton);
+            }
+        }
+        if (existingTransmog)
+        {
+            ItemTemplate const* _removeTransmogButton = sObjectMgr->GetItemTemplate(CUSTOM_REMOVE_TMOG_VENDOR_ID);
+            if (_removeTransmogButton)
+                spoofedItems.push_back(_removeTransmogButton);
+            else
+            {
+                _removeTransmogButton = sObjectMgr->GetItemTemplate(FALLBACK_REMOVE_TMOG_VENDOR_ID);
+                spoofedItems.push_back(_removeTransmogButton);
+            }
+        }
+        return spoofedItems;
+    }
+
+    static uint32 GetSpoofedItemPrice (uint32 itemId, ItemTemplate const* target)
+    {
+        switch (itemId)
+        {
+            case CUSTOM_HIDE_ITEM_VENDOR_ID:
+            case FALLBACK_HIDE_ITEM_VENDOR_ID:
+                return sT->HiddenTransmogIsFree ? 0 : sT->GetSpecialPrice(target);
+            default:
+                return 0;
+        }
+    }
+
+    static void EncodeItemToPacket (WorldPacket& data, ItemTemplate const* proto, uint8& slot, uint32 price)
+    {
+        data << uint32(slot + 1);
+        data << uint32(proto->ItemId);
+        data << uint32(proto->DisplayInfoID);
+        data << int32 (-1); //Infinite Stock
+        data << uint32(price);
+        data << uint32(proto->MaxDurability);
+        data << uint32(1);  //Buy Count of 1
+        data << uint32(0);
+        slot++;
+    }
+
+    //The actual vendor options are handled in the player script below, OnBeforeBuyItemFromVendor
+    static void ShowTransmogItemsInFakeVendor (Player* player, Creature* creature, uint8 slot)
+    {
+        Item* targetItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+        if (!targetItem)
+        {
+            ChatHandler(player->GetSession()).SendNotification(LANG_ERR_TRANSMOG_MISSING_DEST_ITEM);
+            CloseGossipMenuFor(player);
+            return;
+        }
+        ItemTemplate const* targetTemplate = targetItem->GetTemplate();
+
+        std::vector<Item*> itemList = GetValidTransmogs(player, targetItem, false, "");
+        std::vector<ItemTemplate const*> spoofedItems = GetSpoofedVendorItems(targetItem);
+
+        uint32 itemCount = itemList.size();
+        uint32 spoofCount = spoofedItems.size();
+        uint32 totalItems = itemCount + spoofCount;
+        uint32 price = GetTransmogPrice(targetItem->GetTemplate());
+
+        WorldPacket data(SMSG_LIST_INVENTORY, 8 + 1 + totalItems * 8 * 4);
+        data << uint64(creature->GetGUID().GetRawValue());
+
+        uint8 count = 0;
+        size_t count_pos = data.wpos();
+        data << uint8(count);
+
+        for (uint32 i = 0; i < spoofCount && count < MAX_VENDOR_ITEMS; ++i)
+        {
+            EncodeItemToPacket (
+                data, spoofedItems[i], count,
+                GetSpoofedItemPrice(spoofedItems[i]->ItemId, targetTemplate)
+            );
+        }
+        for (uint32 i = 0; i < itemCount && count < MAX_VENDOR_ITEMS; ++i)
+        {
+            ItemTemplate const* _proto = itemList[i]->GetTemplate();
+            if (_proto) EncodeItemToPacket(data, _proto, count, price);
+        }
+
+        data.put(count_pos, count);
+        player->GetSession()->SendPacket(&data);
     }
 };
 
@@ -891,7 +1022,7 @@ private:
         if (sT->AddCollectedAppearance(accountId, itemId))
         {
             if (showChatMessage)
-                ChatHandler(player->GetSession()).PSendSysMessage( R"(|c%s|Hitem:%u:0:0:0:0:0:0:0:0|h[%s]|h|r %s)", itemQuality.c_str(), itemId, itemName.c_str(), GetLocaleText(locale, "added_appearance"));
+                ChatHandler(player->GetSession()).PSendSysMessage( R"(|c{}|Hitem:{}:0:0:0:0:0:0:0:0|h[{}]|h|r {})", itemQuality, itemId, itemName, GetLocaleText(locale, "added_appearance"));
 
             CharacterDatabase.Execute( "INSERT INTO custom_unlocked_appearances (account_id, item_template_id) VALUES ({}, {})", accountId, itemId);
         }
@@ -989,13 +1120,11 @@ public:
     void OnLogin(Player* player) override
     {
         if (sT->EnableResetRetroActiveAppearances())
-        {
             player->UpdatePlayerSetting("mod-transmog", SETTING_RETROACTIVE_CHECK, 0);
-        }
+
         if (sT->EnableRetroActiveAppearances() && !(player->GetPlayerSetting("mod-transmog", SETTING_RETROACTIVE_CHECK).value))
-        {
             CheckRetroActiveQuestAppearances(player);
-        }
+
         ObjectGuid playerGUID = player->GetGUID();
         sT->entryMap.erase(playerGUID);
         QueryResult result = CharacterDatabase.Query("SELECT GUID, FakeEntry FROM custom_transmogrification WHERE Owner = {}", player->GetGUID().GetCounter());
@@ -1010,11 +1139,6 @@ public:
                     sT->dataMap[itemGUID] = playerGUID;
                     sT->entryMap[playerGUID][itemGUID] = fakeEntry;
                 }
-                else
-                {
-                    //sLog->outError(LOG_FILTER_SQL, "Item entry (Entry: {}, itemGUID: {}, playerGUID: {}) does not exist, ignoring.", fakeEntry, GUID_LOPART(itemGUID), player->GetGUIDLow());
-                    // CharacterDatabase.Execute("DELETE FROM custom_transmogrification WHERE FakeEntry = {}", fakeEntry);
-                }
             } while (result->NextRow());
 
             for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
@@ -1022,6 +1146,19 @@ public:
                 if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
                     player->SetVisibleItemSlot(slot, item);
             }
+        }
+
+        if (sConfigMgr->GetOption<bool>("Transmogrification.EnablePlus", false))
+        {
+            uint32 accountId = 0;
+
+            if (player->GetSession())
+                accountId = player->GetSession()->GetAccountId();
+
+            QueryResult resultAcc = LoginDatabase.Query("SELECT `membership_level`  FROM `acore_cms_subscriptions` WHERE `account_name` COLLATE utf8mb4_general_ci = (SELECT `username` FROM `account` WHERE `id` = {})", accountId);
+
+            if (resultAcc)
+                player->UpdatePlayerSetting("acore_cms_subscriptions", SETTING_TRANSMOG_MEMBERSHIP_LEVEL, (*resultAcc)[0].Get<uint32>());
         }
 
 #ifdef PRESETS
@@ -1036,11 +1173,39 @@ public:
         for (Transmogrification::transmog2Data::const_iterator it = sT->entryMap[pGUID].begin(); it != sT->entryMap[pGUID].end(); ++it)
             sT->dataMap.erase(it->first);
         sT->entryMap.erase(pGUID);
+        sT->selectionCache.erase(pGUID);
 
 #ifdef PRESETS
         if (sT->GetEnableSets())
             sT->UnloadPlayerSets(pGUID);
 #endif
+    }
+
+    void OnBeforeBuyItemFromVendor(Player* player, ObjectGuid vendorguid, uint32 /*vendorslot*/, uint32& itemEntry, uint8 /*count*/, uint8 /*bag*/, uint8 /*slot*/) override
+    {
+        Creature* vendor = player->GetMap()->GetCreature(vendorguid);
+        if (!vendor)
+            return;
+
+        if (!sT->IsTransmogVendor(vendor->GetEntry()))
+            return;
+
+        uint8 slot = sT->selectionCache[player->GetGUID()];
+
+        if (itemEntry == CUSTOM_HIDE_ITEM_VENDOR_ID || itemEntry == FALLBACK_HIDE_ITEM_VENDOR_ID)
+        {
+            PerformTransmogrification(player, UINT_MAX, 0);
+        }
+        else if (itemEntry == CUSTOM_REMOVE_TMOG_VENDOR_ID || itemEntry == FALLBACK_REMOVE_TMOG_VENDOR_ID)
+        {
+            RemoveTransmogrification(player);
+        }
+        else
+        {
+            PerformTransmogrification(player, itemEntry, 0);
+        }
+        npc_transmogrifier::ShowTransmogItemsInFakeVendor(player, vendor, slot); //Refresh menu
+        itemEntry = 0; //Prevents the handler from proceeding to core vendor handling
     }
 };
 

@@ -76,11 +76,11 @@ void WorldBosses::SetSaveStatus(Player* player, uint32 entry, uint8 status)
     {
         if (status == STATUS_UNLOCKED)
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("Your lock for %s has reset.", creature->Name);
+            ChatHandler(player->GetSession()).PSendSysMessage("Your lock for {} has reset.", creature->Name);
         }
         else
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("You are now locked to this boss (%s) and may not receive loot until the lock expires.", creature->Name);
+            ChatHandler(player->GetSession()).PSendSysMessage("You are now locked to this boss ({}) and may not receive loot until the lock expires.", creature->Name);
         }
     }
 }
@@ -359,7 +359,7 @@ public:
                     {
                         if (groupGuy->GetSession())
                         {
-                            ChatHandler(groupGuy->GetSession()).PSendSysMessage("Phasing failed: you are already saved to this boss (%s).", me->GetNameForLocaleIdx(groupGuy->GetSession()->GetSessionDbLocaleIndex()));
+                            ChatHandler(groupGuy->GetSession()).PSendSysMessage("Phasing failed: you are already saved to this boss ({}).", me->GetNameForLocaleIdx(groupGuy->GetSession()->GetSessionDbLocaleIndex()));
                         }
 
                         continue;

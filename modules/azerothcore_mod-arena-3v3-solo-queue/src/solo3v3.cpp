@@ -30,110 +30,13 @@ Solo3v3* Solo3v3::instance()
     return &instance;
 }
 
-void Solo3v3::SaveSoloDB(ArenaTeam* team)
-{
-    if (!team)
-        return;
-
-    // Init some variables for speedup the programm
-    ArenaTeam* realTeams[3];
-    uint32 itrRealTeam = 0;
-
-    for (; itrRealTeam < 3; itrRealTeam++)
-        realTeams[itrRealTeam] = nullptr;
-
-    itrRealTeam = 0;
-    uint32 oldRating = 0;
-
-    // First get the old average rating by looping through all members in temp team and add up the rating
-    for (auto const& itr : team->GetMembers())
-    {
-        ArenaTeam* plrArenaTeam = nullptr;
-
-        // Find real arena team for player
-        for (auto const& itrMgr : sArenaTeamMgr->GetArenaTeams())
-        {
-            if (itrMgr.first < 0xFFF00000 && itrMgr.second->GetCaptain() == itr.Guid && itrMgr.second->GetType() == ARENA_TEAM_SOLO_3v3)
-            {
-                plrArenaTeam = itrMgr.second; // found!
-                break;
-            }
-        }
-
-        if (!plrArenaTeam)
-            continue; // Not found? Maybe player has left the game and deleted it before the arena game ends.
-
-        ASSERT(itrRealTeam < 3);
-        realTeams[itrRealTeam++] = plrArenaTeam;
-
-        oldRating += plrArenaTeam->GetRating(); // add up all ratings from each player team
-    }
-
-    if (team->GetMembersSize() > 0)
-        oldRating /= team->GetMembersSize(); // Get average
-
-    int32 ratingModifier = team->GetRating() - oldRating; // GetRating() contains the new rating and oldRating is the old average rating
-
-    itrRealTeam = 0;
-
-    // Let's loop again through temp arena team and add the new rating
-    for (auto const& _itr : team->GetMembers())
-    {
-        ArenaTeam* plrArenaTeam = realTeams[itrRealTeam++];
-
-        if (!plrArenaTeam)
-            continue;
-
-        ArenaTeamStats atStats = plrArenaTeam->GetStats();
-
-        if (int32(atStats.Rating) + ratingModifier < 0)
-            atStats.Rating = 0;
-        else
-            atStats.Rating += ratingModifier;
-
-        atStats.SeasonGames = _itr.SeasonGames;
-        atStats.SeasonWins = _itr.SeasonWins;
-        atStats.WeekGames = _itr.WeekGames;
-        atStats.WeekWins = _itr.WeekWins;
-
-        for (auto realMemberItr : plrArenaTeam->GetMembers())
-        {
-            if (realMemberItr.Guid != plrArenaTeam->GetCaptain())
-                continue;
-
-            realMemberItr.PersonalRating = _itr.PersonalRating;
-            realMemberItr.MatchMakerRating = _itr.MatchMakerRating;
-            realMemberItr.SeasonGames = _itr.SeasonGames;
-            realMemberItr.SeasonWins = _itr.SeasonWins;
-            realMemberItr.WeekGames = _itr.WeekGames;
-            realMemberItr.WeekWins = _itr.WeekWins;
-        }
-
-        plrArenaTeam->SetArenaTeamStats(atStats);
-        plrArenaTeam->NotifyStatsChanged();
-        plrArenaTeam->SaveToDB();
-    }
-}
-
 uint32 Solo3v3::GetAverageMMR(ArenaTeam* team)
 {
     if (!team)
         return 0;
 
-    uint32 matchMakerRating = 0;
-    uint32 playerDivider = 0;
-
-    for (auto const& itr : team->GetMembers())
-    {
-        matchMakerRating += itr.MatchMakerRating;
-        playerDivider++;
-    }
-
-    //x/0 = crash
-    if (!playerDivider)
-        playerDivider++;
-
-    matchMakerRating /= playerDivider;
+    // this could be improved with a better balanced calculation
+    uint32 matchMakerRating = team->GetStats().Rating;
 
     return matchMakerRating;
 }
@@ -162,6 +65,14 @@ void Solo3v3::CleanUp3v3SoloQ(Battleground* bg)
 
 void Solo3v3::CheckStartSolo3v3Arena(Battleground* bg)
 {
+    // Fix crash with Arena Replay module
+    for (const auto& playerPair : bg->GetPlayers())
+    {
+        Player* player = playerPair.second;
+        if (player->IsSpectator())
+            return;
+    }
+
     if (bg->GetArenaType() != ARENA_TYPE_3v3_SOLO)
         return;
 
@@ -197,14 +108,14 @@ void Solo3v3::CheckStartSolo3v3Arena(Battleground* bg)
         }
     }
 
-    if (someoneNotInArena && sConfigMgr->GetOption<bool>("Solo.3v3.StopGameIncomplete", true))
+    if (someoneNotInArena && sConfigMgr->GetOption<bool>("Solo.3v3.StopGameIncomplete", false))
     {
         bg->SetRated(false);
         bg->EndBattleground(TEAM_NEUTRAL);
     }
 }
 
-bool Solo3v3::CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId bracket_id)
+bool Solo3v3::CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId bracket_id, bool isRated)
 {
     bool soloTeam[BG_TEAMS_COUNT][MAX_TALENT_CAT]; // 2 teams and each team 3 players - set to true when slot is taken
 
@@ -221,7 +132,12 @@ bool Solo3v3::CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId 
 
     for (int teamId = 0; teamId < 2; teamId++) // BG_QUEUE_PREMADE_ALLIANCE and BG_QUEUE_PREMADE_HORDE
     {
-        for (BattlegroundQueue::GroupsQueueType::iterator itr = queue->m_QueuedGroups[bracket_id][teamId].begin(); itr != queue->m_QueuedGroups[bracket_id][teamId].end(); ++itr)
+        int index = teamId;
+
+        if (!isRated)
+            index += PVP_TEAMS_COUNT;
+
+        for (BattlegroundQueue::GroupsQueueType::iterator itr = queue->m_QueuedGroups[bracket_id][index].begin(); itr != queue->m_QueuedGroups[bracket_id][index].end(); ++itr)
         {
             if ((*itr)->IsInvitedToBGInstanceGUID) // Skip when invited
                 continue;
@@ -257,7 +173,7 @@ bool Solo3v3::CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId 
                             (*itr)->GroupType = BG_QUEUE_PREMADE_ALLIANCE;
                             queue->m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].push_front((*itr));
                             itr = queue->m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].erase(itr);
-                            return CheckSolo3v3Arena(queue, bracket_id);
+                            return CheckSolo3v3Arena(queue, bracket_id, isRated);
                         }
                     }
                 }
@@ -273,7 +189,7 @@ bool Solo3v3::CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId 
                             (*itr)->GroupType = BG_QUEUE_PREMADE_HORDE;
                             queue->m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].push_front((*itr));
                             itr = queue->m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].erase(itr);
-                            return CheckSolo3v3Arena(queue, bracket_id);
+                            return CheckSolo3v3Arena(queue, bracket_id, isRated);
                         }
                     }
                 }
@@ -320,7 +236,7 @@ void Solo3v3::CreateTempArenaTeamForQueue(BattlegroundQueue* queue, ArenaTeam* a
         std::stringstream ssTeamName;
         ssTeamName << "Solo Team - " << (i + 1);
 
-        tempArenaTeam->CreateTempArenaTeam(playersList, ARENA_TEAM_SOLO_3v3, ssTeamName.str());
+        tempArenaTeam->CreateTempArenaTeam(playersList, ARENA_TYPE_3v3_SOLO, ssTeamName.str());
         sArenaTeamMgr->AddArenaTeam(tempArenaTeam);
         arenaTeams[i] = tempArenaTeam;
     }
@@ -331,7 +247,7 @@ bool Solo3v3::Arena3v3CheckTalents(Player* player)
     if (!player)
         return false;
 
-    if (sConfigMgr->GetOption<bool>("Arena.3v3.BlockForbiddenTalents", false) == false)
+    if (!sConfigMgr->GetOption<bool>("Arena.3v3.BlockForbiddenTalents", false))
         return true;
 
     uint32 count = 0;
@@ -361,7 +277,7 @@ bool Solo3v3::Arena3v3CheckTalents(Player* player)
         ChatHandler(player->GetSession()).SendSysMessage("You can't join, because you have invested to much points in a forbidden talent. Please edit your talents.");
         return false;
     }
-    
+
     return true;
 }
 

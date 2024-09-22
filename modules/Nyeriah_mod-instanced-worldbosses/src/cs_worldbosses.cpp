@@ -68,7 +68,7 @@ public:
                     player->UpdatePlayerSetting("mod-instanced-worldbosses#" + Acore::ToString(token), SETTING_BOSS_STATUS, 0);
                     if (CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(token))
                     {
-                        handler->PSendSysMessage("Your lock for %s has reset.", creature->Name);
+                        handler->PSendSysMessage("Your lock for {} has reset.", creature->Name);
                     }
                 }
                 else
@@ -76,7 +76,7 @@ public:
                     if (CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(token))
                     {
                         tm tmBan = Acore::Time::TimeBreakdown(currentTimer + sConfigMgr->GetOption<uint32>("ModInstancedWorldBosses.ResetTimerSecs", 259200));
-                        handler->PSendSysMessage("Your lock for %s expires in |%02d-%02d-%02d %02d:%02d|.", creature->Name, tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min);
+                        handler->PSendSysMessage("Your lock for {} expires in |{:%Y-%m-%d %H:%M}|.", creature->Name, tmBan);
                     }
                 }
             }

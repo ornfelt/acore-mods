@@ -19,6 +19,9 @@ UPDATE quest_template SET RequiredItemId1 = 750 WHERE ID=33;
 /*  The Legend of Stalvan  */
 UPDATE quest_template SET QuestLevel = 35 WHERE ID=98;
 
+/* Shadow Magic */
+UPDATE quest_template SET QuestInfoID = 1, SuggestedGroupNum = 2 WHERE ID=115;
+
 /*  Howling in the Hills  */
 UPDATE quest_template SET QuestLevel = 25 WHERE ID=126;
 
@@ -1055,8 +1058,8 @@ UPDATE `quest_template` SET `QuestDescription` = "It sure gets hot out here in t
 
 
 /*  Beware of Pterrordax  */
-UPDATE `quest_template` SET `LogDescription` = "Kill 115 Frenzied Pterrordax, then speak to Spraggle Frock at Marshal's Refuge." WHERE `ID` = 4501;
-UPDATE `quest_template` SET `QuestDescription` = "Wanted: A skilled fighter to deal with the threat of the Pterrordax that inhabit the Un'Goro Crater. Their numbers are growing, and they are becoming a menace to travelers in the area.$B$BDecrease the population by slaying 115 frenzied pterrordax.$B$BSpeak with Spraggle Frock after completing the task for a reward." WHERE `ID` = 4501;
+UPDATE `quest_template` SET `LogDescription` = "Kill 10 Pterrordax and 15 Frenzied Pterrordax, then speak to Spraggle Frock at Marshal's Refuge." WHERE `ID` = 4501;
+UPDATE `quest_template` SET `QuestDescription` = "Wanted: A skilled fighter to deal with the threat of the Pterrordax that inhabit the Un'Goro Crater. Their numbers are growing, and they are becoming a menace to travelers in the area.$B$BDecrease the population by slaying 10 Pterrordax and 15 frenzied pterrordax.$B$BSpeak with Spraggle Frock after completing the task for a reward." WHERE `ID` = 4501;
 
 
 /*  A Matter of Time  */
@@ -1074,6 +1077,34 @@ UPDATE `quest_template` SET `QuestDescription` = "You have the look of a fisherm
 
 /*  Twisted Evils  */
 UPDATE `quest_template` SET `LogDescription` = "Collect 25 Theradric Crystal Carvings for Willow in Desolace." WHERE `ID` = 7028;
+
+
+/* Imperial Plate Belt */
+UPDATE `quest_request_items` SET `CompletionText` = "For the belt plans, I'll be needin' 20 thorium bars."   WHERE `ID` = 7653;
+
+
+/* Imperial Plate Boots */
+UPDATE `quest_request_items` SET `CompletionText` = "For the boot plans, I'll be needin' 40 thorium bars. Yep, 40. Are you gonna cry? Would you like a hanky?$B$B<Derotain laughs.>"   WHERE `ID` = 7654;
+
+
+/* Imperial Plate Bracer */
+UPDATE `quest_request_items` SET `CompletionText` = "For the bracer plans, I'll be needin' 20 thorium bars.$B$BAre you alright, sonny? Yer getting' all red."   WHERE `ID` = 7655;
+
+
+/* Imperial Plate Chest */
+UPDATE `quest_request_items` SET `CompletionText` = "For the chest piece plans, I'll be needin' 60 thorium bars.$B$BOh boy, there you go again. Are you gonna be runnin' to yer blue Gods, askin' why they have forsaken you?!? Toughen up, Nancy! Nobody ever said life's fair."   WHERE `ID` = 7656;
+
+
+/* Imperial Plate Helm */
+UPDATE `quest_request_items` SET `CompletionText` = "Just hand over 50 thorium bars and the helm plans are yers."   WHERE `ID` = 7657;
+
+
+/* Imperial Plate Leggings */
+UPDATE `quest_request_items` SET `CompletionText` = "Just hand over 60 thorium bars and the leg plans are yers.$B$BI know, I'm driving you into bankruptcy! I've heard it all before so you can save your sob story, weakling."   WHERE `ID` = 7658;
+
+
+/* Imperial Plate Shoulders */
+UPDATE `quest_request_items` SET `CompletionText` = "For the shoulder plans, I'll be needin' 20 thorium bars."   WHERE `ID` = 7659;
 
 
 /*  Snapjaws, Mon!  */
