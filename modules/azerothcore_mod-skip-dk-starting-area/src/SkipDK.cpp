@@ -110,7 +110,7 @@ void Azerothcore_skip_deathknight_HandleSkip(Player* player)
     player->AddItem(38632, true);//Greatsword of the Ebon Blade
 
     int DKL = sConfigMgr->GetOption<float>("Skip.Deathknight.Start.Level", 58);
-    if (player->getLevel() <= DKL)
+    if (player->GetLevel() <= DKL)
     {
         //GiveLevel updates character properties more thoroughly than SetLevel
         player->GiveLevel(DKL);
