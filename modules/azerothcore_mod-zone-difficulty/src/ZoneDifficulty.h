@@ -58,6 +58,18 @@ struct ZoneDifficultyHAI
     bool TriggeredCast;
 };
 
+struct VendorSelectionData
+{
+    uint8 category;
+    uint8 slot;
+};
+
+struct CreatureOverrideData
+{
+    float NormalOverride;
+    float MythicOverride;
+};
+
 int32 const DUEL_INDEX = 0x7FFFFFFF;
 int32 const DUEL_AREA = 2402;       // Forbidding Sea (Wetlands)
 
@@ -113,21 +125,32 @@ enum ZoneDifficultySettings
     TYPE_RAID_AQ40    = 7,
     TYPE_HEROIC_TBC   = 8,
     TYPE_RAID_T4      = 9,
-    TYPE_RAID_T5      = 10,
+    TYPE_RAID_SSC     = 10,
     TYPE_RAID_T6      = 11,
-    TYPE_HEROIC_WOTLK = 12,
-    TYPE_RAID_T7      = 13,
-    TYPE_RAID_T8      = 14,
-    TYPE_RAID_T9      = 15,
-    TYPE_RAID_T10     = 16,
+    TYPE_RAID_ZA      = 12,
+    TYPE_HEROIC_WOTLK = 13,
+    TYPE_RAID_T7      = 14,
+    TYPE_RAID_T8      = 15,
+    TYPE_RAID_T9      = 16,
+    TYPE_RAID_T10     = 17,
+    TYPE_RAID_HYJAL   = 18,
+
+    TYPE_MAX_TIERS,
 
     // Completed tiers settings
-    SETTING_BLACK_TEMPLE = 0
+    SETTING_BLACK_TEMPLE = 0,
+    SETTING_ZULAMAN      = 1,
+    SETTING_SSC          = 2,
+    SETTING_HYJAL        = 3
 };
 
 enum Misc
 {
-    NPC_ILLIDAN_STORMRAGE = 22917
+    NPC_ILLIDAN_STORMRAGE = 22917,
+    NPC_LADY_VASHJ        = 21212,
+    NPC_ARCHIMONDE        = 17968,
+    NPC_ZULJIN            = 23863,
+    NPC_REWARD_CHROMIE    = 1128002,
 };
 
 class ZoneDifficulty
@@ -144,30 +167,36 @@ public:
     std::string GetContentTypeString(uint32 type);
     void AddMythicmodeScore(Map* map, uint32 type, uint32 score);
     void DeductMythicmodeScore(Player* player, uint32 type, uint32 score);
-    void SendItem(Player* player, uint32 category, uint32 itemType, uint32 id);
+    void SendItem(Player* player, ZoneDifficultyRewardData data);
     std::list<Unit*> GetTargetList(Unit* unit, uint32 entry, uint32 key);
     void MythicmodeEvent(Unit* unit, uint32 entry, uint32 key);
     bool HasNormalMode(int8 mode) { return (mode & MODE_NORMAL) == MODE_NORMAL; }
     bool HasMythicmode(int8 mode) { return (mode & MODE_HARD) == MODE_HARD; }
     bool HasCompletedFullTier(uint32 category, uint32 playerGUID);
     bool OverrideModeMatches(uint32 instanceId, uint32 spellId, uint32 mapId);
+    [[nodiscord]] bool CheckCompletionStatus(Creature* creature, Player* player, uint32 category) const;
     [[nodiscard]] bool IsValidNerfTarget(Unit* target);
     [[nodiscard]] bool VectorContainsUint32(std::vector<uint32> vec, uint32 element);
     [[nodiscard]] bool IsMythicmodeMap(uint32 mapid);
     [[nodiscard]] bool ShouldNerfInDuels(Unit* target);
     [[nodiscard]] bool ShouldNerfMap(uint32 mapId) { return NerfInfo.find(mapId) != NerfInfo.end(); };
     [[nodiscard]] int32 GetLowestMatchingPhase(uint32 mapId, uint32 phaseMask);
+    void RewardItem(Player* player, uint8 category, uint8 itemType, uint8 counter, Creature* creature, uint32 itemEntry);
+    void LogAndAnnounceKill(Map* map, bool isMythic);
+    void ProcessCreatureDeath(Map* map, uint32 entry);
 
     bool IsEnabled{ false };
     bool IsDebugInfoEnabled{ false };
     float MythicmodeHpModifier{ 2.0 };
     bool MythicmodeEnable{ false };
     bool MythicmodeInNormalDungeons{ false };
+    bool UseVendorInterface{ false };
+    bool IsBlackTempleDone{ false };
     std::vector<uint32> DailyHeroicQuests;
     std::map<uint32, uint32> HeroicTBCQuestMapList;
     std::map<uint32, uint8> EncounterCounter;
     std::map<uint32, uint8> Expansion;
-    std::map<uint32, float> CreatureOverrides;
+    std::map<uint32, CreatureOverrideData> CreatureOverrides;
     std::map<uint32, uint32> EncountersInProgress;
     std::map<uint32, std::string> ItemIcons;
     std::map<uint8, ZoneDifficultyRewardData> TierRewards;
@@ -190,6 +219,8 @@ public:
     ZoneDifficultyHAIMap MythicmodeAI;
     typedef std::map<uint32, std::map<uint32, std::map<uint32, bool> > > ZoneDifficultyEncounterLogMap;
     ZoneDifficultyEncounterLogMap Logs;
+    typedef std::unordered_map<ObjectGuid, VendorSelectionData> ZoneDifficultyVendorSelectionMap;
+    ZoneDifficultyVendorSelectionMap SelectionCache;
 };
 
 #define sZoneDifficulty ZoneDifficulty::instance()

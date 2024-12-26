@@ -52,6 +52,14 @@ Arena1v1.VendorRating = 0
 
 Arena1v1.ArenaPointsMulti = 0.64
 
+
+#
+#    Arena1v1.ArenaPointsMinLevel
+#        Description: minlevel to get the arena points
+#        Default:     70
+
+Arena1v1.ArenaPointsMinLevel = 70
+
 #
 #   Arena1v1.PreventHealingTalents
 #       Description: If enabled, it prevents people from having healing talents.

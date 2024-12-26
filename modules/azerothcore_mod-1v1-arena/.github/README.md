@@ -30,6 +30,11 @@
 
 - Enable the module and join 1v1 with 2 characters at the BattleMaster Npc.
 
+`.npc add 999991`
+
+![image](https://github.com/user-attachments/assets/e265800d-847d-4e3e-9635-644804eb1b2f)
+
+
 ### Info
 
 This module runs over the 5v5. You can configure it to run over 4v4/3v3..etc As you desire.

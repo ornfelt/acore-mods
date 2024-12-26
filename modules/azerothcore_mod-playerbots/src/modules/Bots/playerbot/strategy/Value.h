@@ -1,0 +1,293 @@
+#pragma once
+#include "Action.h"
+#include "Event.h"
+#include "../PlayerbotAIAware.h"
+#include "../PerformanceMonitor.h"
+#include "AiObject.h"
+
+namespace ai
+{
+    class UntypedValue : public AiNamedObject
+    {
+    public:
+        UntypedValue(PlayerbotAI* ai, string name) : AiNamedObject(ai, name) {}
+        virtual void Update() {}
+        virtual void Reset() {}
+        virtual string Format() { return "?"; }
+        virtual string Save() { return "?"; }
+        virtual bool Load(string value) { return false; }
+    };
+
+    template<class T>
+    class Value
+    {
+    public:
+        virtual T Get() = 0;
+        virtual T LazyGet() = 0;
+        virtual void Reset() {}
+        virtual void Set(T value) = 0;
+        operator T() { return Get(); }
+    };
+
+    template<class T>
+    class CalculatedValue : public UntypedValue, public Value<T>
+	{
+	public:
+        CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) : UntypedValue(ai, name),
+            checkInterval(checkInterval)
+        {
+            lastCheckTime = 0;
+        }
+        virtual ~CalculatedValue() {}
+
+	public:
+        virtual T Get()
+        {
+            time_t now = time(0);
+            if (!lastCheckTime || checkInterval < 2 || now - lastCheckTime >= checkInterval / 2)
+            {
+                lastCheckTime = now;
+
+                PerformanceMonitorOperation *pmo = sPerformanceMonitor.start(PERF_MON_VALUE, getName(), context ? &context->performanceStack : nullptr);
+                value = Calculate();
+                if (pmo) pmo->finish();
+            }
+            return value;
+        }
+        virtual T LazyGet()
+        {
+            if (!lastCheckTime)
+                return Get();
+            return value;
+        }
+        virtual void Set(T value) { this->value = value; }
+        virtual void Update() { }
+        virtual void Reset() { lastCheckTime = 0; }
+    protected:
+        virtual T Calculate() = 0;
+
+    protected:
+		int checkInterval;
+		time_t lastCheckTime;
+        T value;
+	};
+
+    template <class T> class SingleCalculatedValue : public CalculatedValue<T>
+    {
+    public:
+        SingleCalculatedValue(PlayerbotAI* ai, string name = "value") : CalculatedValue(ai, name) { Reset(); }
+
+        virtual T Get()
+        {
+            time_t now = time(0);
+            if (!lastCheckTime)
+            {
+                lastCheckTime = now;
+
+                PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, getName(), context ?  &context->performanceStack : nullptr);
+                value = Calculate();
+                if (pmo) pmo->finish();
+            }
+            return value;
+        }
+    };
+    
+    template<class T> class MemoryCalculatedValue : public CalculatedValue<T>
+    {
+    public:
+        MemoryCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) : CalculatedValue<T>(ai, name,checkInterval) { lastChangeTime = time(0); }
+        virtual bool EqualToLast(T value) = 0;
+        virtual bool CanCheckChange() { return time(0) - lastChangeTime < minChangeInterval || EqualToLast(value); }
+        virtual bool UpdateChange() { if (CanCheckChange()) return false; lastChangeTime = time(0); lastValue = value; return true; }
+
+        virtual void Set(T value) { CalculatedValue<T>::Set(value); UpdateChange(); }
+        virtual T Get() {value = CalculatedValue<T>::Get(); UpdateChange(); return value;}
+
+        time_t LastChangeOn() {Get(); UpdateChange(); return lastChangeTime;}
+        uint32 LastChangeDelay() { return time(0) - LastChangeOn(); }
+
+        virtual void Reset() { CalculatedValue::Reset(); lastChangeTime = time(0); }
+    protected:
+        T lastValue;
+        uint32 minChangeInterval = 0;
+        time_t lastChangeTime;
+    };
+
+    template<class T> class LogCalculatedValue : public MemoryCalculatedValue<T>
+    {
+    public:
+        LogCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) : MemoryCalculatedValue<T>(ai, name, checkInterval) {};
+        virtual bool UpdateChange() { if (MemoryCalculatedValue::UpdateChange()) return false; valueLog.push_back(make_pair(value, time(0))); if (valueLog.size() > logLength) valueLog.pop_front(); return true; }
+
+        list<pair<T, time_t>> ValueLog() { return valueLog; }
+
+        virtual void Reset() { MemoryCalculatedValue::Reset(); valueLog.clear(); }
+    protected:
+        list<pair<T, time_t>> valueLog;
+        uint8 logLength = 10;
+    };    
+
+    class Uint8CalculatedValue : public CalculatedValue<uint8>
+    {
+    public:
+        Uint8CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
+            CalculatedValue<uint8>(ai, name, checkInterval) {}
+
+        virtual string Format()
+        {
+            ostringstream out; out << (int)Calculate();
+            return out.str();
+        }
+    };
+
+    class Uint32CalculatedValue : public CalculatedValue<uint32>
+    {
+    public:
+        Uint32CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
+            CalculatedValue<uint32>(ai, name, checkInterval) {}
+
+        virtual string Format()
+        {
+            ostringstream out; out << (int)Calculate();
+            return out.str();
+        }
+    };
+
+    class FloatCalculatedValue : public CalculatedValue<float>
+    {
+    public:
+        FloatCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
+            CalculatedValue<float>(ai, name, checkInterval) {}
+
+        virtual string Format()
+        {
+            ostringstream out; out << Calculate();
+            return out.str();
+        }
+    };
+
+    class BoolCalculatedValue : public CalculatedValue<bool>
+    {
+    public:
+        BoolCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
+            CalculatedValue<bool>(ai, name, checkInterval) {}
+
+        virtual string Format()
+        {
+            return Calculate() ? "true" : "false";
+        }
+    };
+
+    class UnitCalculatedValue : public CalculatedValue<Unit*>
+    {
+    public:
+        UnitCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
+            CalculatedValue<Unit*>(ai, name, checkInterval) { lastCheckTime = time(0) - checkInterval / 2; }
+
+        virtual string Format()
+        {
+            Unit* unit = Calculate();
+            return unit ? unit->GetName() : "<none>";
+        }
+    };
+    
+    class CDPairCalculatedValue : public CalculatedValue<CreatureDataPair const*>
+    {
+    public:
+        CDPairCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
+            CalculatedValue<CreatureDataPair const*>(ai, name, checkInterval) { lastCheckTime = time(0) - checkInterval / 2; }
+
+        virtual string Format()
+        {
+            CreatureDataPair const* creatureDataPair = Calculate();
+            CreatureInfo const* bmTemplate = ObjectMgr::GetCreatureTemplate(creatureDataPair->second.id);
+            return creatureDataPair ? bmTemplate->Name : "<none>";
+        }
+    };
+
+    class CDPairListCalculatedValue : public CalculatedValue<list<CreatureDataPair const*>>
+    {
+    public:
+        CDPairListCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
+            CalculatedValue<list<CreatureDataPair const*>>(ai, name, checkInterval) { lastCheckTime = time(0) - checkInterval / 2; }
+
+        virtual string Format()
+        {
+            ostringstream out; out << "{";
+            list<CreatureDataPair const*> cdPairs = Calculate();
+            for (list<CreatureDataPair const*>::iterator i = cdPairs.begin(); i != cdPairs.end(); ++i)
+            {
+                CreatureDataPair const* cdPair = *i;
+                out << cdPair->first << ",";
+            }
+            out << "}";
+            return out.str();
+        }
+    };
+
+    class ObjectGuidCalculatedValue : public CalculatedValue<ObjectGuid>
+    {
+    public:
+        ObjectGuidCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
+            CalculatedValue<ObjectGuid>(ai, name, checkInterval) { lastCheckTime = time(0) - checkInterval / 2; }
+
+        virtual string Format()
+        {
+            ObjectGuid guid = Calculate();
+            return guid ? to_string(guid.GetRawValue()) : "<none>";
+        }
+    };
+
+    class ObjectGuidListCalculatedValue : public CalculatedValue<list<ObjectGuid> >
+    {
+    public:
+        ObjectGuidListCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
+            CalculatedValue<list<ObjectGuid> >(ai, name, checkInterval) { lastCheckTime = time(0) - checkInterval/2; }
+
+        virtual string Format()
+        {
+            ostringstream out; out << "{";
+            list<ObjectGuid> guids = Calculate();
+            for (list<ObjectGuid>::iterator i = guids.begin(); i != guids.end(); ++i)
+            {
+                ObjectGuid guid = *i;
+                out << guid.GetRawValue() << ",";
+            }
+            out << "}";
+            return out.str();
+        }
+    };
+
+    template<class T>
+    class ManualSetValue : public UntypedValue, public Value<T>
+    {
+    public:
+        ManualSetValue(PlayerbotAI* ai, T defaultValue, string name = "value") :
+            UntypedValue(ai, name), value(defaultValue), defaultValue(defaultValue) {}
+        virtual ~ManualSetValue() {}
+
+    public:
+        virtual T Get() { return value; }
+        virtual T LazyGet() { return value; }
+        virtual void Set(T value) { this->value = value; }
+        virtual void Update() { }
+        virtual void Reset() { value = defaultValue; }
+
+    protected:
+        T value;
+        T defaultValue;
+    };
+
+    class UnitManualSetValue : public ManualSetValue<Unit*>
+    {
+    public:
+        UnitManualSetValue(PlayerbotAI* ai, Unit* defaultValue, string name = "value") :
+            ManualSetValue<Unit*>(ai, defaultValue, name) {}
+
+        virtual string Format()
+        {
+            Unit* unit = Get();
+            return unit ? unit->GetName() : "<none>";
+        }
+    };
+}

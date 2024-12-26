@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+#
+# CUSTOM
+#
+
+DB_CHARACTERS_CUSTOM_PATHS+=(
+	$MOD_ALPHAREWARDS_ROOT"/data/sql/db-characters/"
+)
+
+DB_WORLD_CUSTOM_PATHS+=(
+	$MOD_ALPHAREWARDS_ROOT"/data/sql/db-world/"
+)
+
+DB_AUTH_CUSTOM_PATHS+=(
+	$MOD_ALPHAREWARDS_ROOT"/data/sql/db-auth/"
+)
+
+#
+# UPDATES
+#
+
+DB_CHARACTERS_UPDATE_PATHS+=(
+	$MOD_ALPHAREWARDS_ROOT"/data/sql/updates/char/"
+)
+
+DB_WORLD_UPDATE_PATHS+=(
+	$MOD_ALPHAREWARDS_ROOT"/data/sql/updates/world/"
+)
+
+DB_AUTH_UPDATE_PATHS+=(
+	$MOD_ALPHAREWARDS_ROOT"/data/sql/db-auth/"
+)

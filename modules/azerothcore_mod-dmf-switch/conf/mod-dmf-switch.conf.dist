@@ -1,0 +1,27 @@
+#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+#
+
+[worldserver]
+
+########################################
+# mod-dmf-switch configuration
+########################################
+#
+#    ModDMFSwitch.Enable
+#        Description: Enable the module.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ModDMFSwitch.Enable = 1
+
+#
+#    ModDMFSwitch.SwitchTerokkar
+#  
+#        Description: When the Darkmoonfaire event starts, switch it to another one specified in this config.
+#
+
+ModDMFSwitch.SwitchTerokkar = 4
+
+

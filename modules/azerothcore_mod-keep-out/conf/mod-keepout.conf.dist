@@ -1,0 +1,42 @@
+[worldserver]
+
+#
+#   KeepOutAnnouncerEnabled
+#       Enable/Disable Announcer
+#       Default:    Enabled = 1
+#
+
+Announcer.Enable = 1
+
+#
+#   KeepOutEnabled
+#       Enable/Disable this Module
+#       Default:    Enabled = 1
+#                   Disable = 0
+#
+
+KeepOutEnabled = 1
+
+#
+#    MaxWarnings
+#        Description: MaxWarnings before the player gets kicked from the server
+#        Default: 3
+#
+
+MaxWarnings = 3
+
+#
+#   KeepOutTeleportEnabled
+#        Description: Enables the player to be teleported
+#        Default: 1 (Enabled)
+#
+
+KeepOutTeleportEnabled = 1
+
+#
+#   KeepOutKickPlayerEnabled
+#        Description: Allows to expel the player
+#        Default: 1 (Enabled)
+#
+
+KeepOutKickPlayerEnabled = 1

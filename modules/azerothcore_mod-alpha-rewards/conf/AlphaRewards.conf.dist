@@ -1,0 +1,11 @@
+# AlphaRewardsEnable
+# To enable or disable the module
+# default = 1 (enable)
+
+AlphaRewardsEnable = 1
+
+# RewardPlayedTime
+# Rewards players for the amount of time they have spent logged in on that session
+# default = 2
+
+RewardPlayedTime = 2

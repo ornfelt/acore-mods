@@ -86,7 +86,7 @@ public:
                             {
                                 if (sZoneDifficulty->SpellNerfOverrides[spellInfo->Id].find(mapId) != sZoneDifficulty->SpellNerfOverrides[spellInfo->Id].end())
                                 {
-                                    // Check if the mode of instance and SpellNerfOverride match 
+                                    // Check if the mode of instance and SpellNerfOverride match
                                     if (sZoneDifficulty->OverrideModeMatches(target->GetMap()->GetInstanceId(), spellInfo->Id, mapId))
                                         absorb = eff->GetAmount() * sZoneDifficulty->SpellNerfOverrides[spellInfo->Id][mapId].NerfPct;
                                 }
@@ -397,46 +397,6 @@ public:
     }
 };
 
-class mod_zone_difficulty_playerscript : public PlayerScript
-{
-public:
-    mod_zone_difficulty_playerscript() : PlayerScript("mod_zone_difficulty_playerscript") { }
-
-    void OnMapChanged(Player* player) override
-    {
-        uint32 mapId = player->GetMapId();
-        if (sZoneDifficulty->DisallowedBuffs.find(mapId) != sZoneDifficulty->DisallowedBuffs.end())
-        {
-            for (auto aura : sZoneDifficulty->DisallowedBuffs[mapId])
-            {
-                player->RemoveAura(aura);
-            }
-        }
-    }
-
-    void OnLogin(Player* player) override
-    {
-        if (sZoneDifficulty->MythicmodeScore.empty())
-            return;
-
-        if (sZoneDifficulty->MythicmodeScore.find(player->GetGUID().GetCounter()) != sZoneDifficulty->MythicmodeScore.end())
-        {
-            for (int i = 1; i <= 16; ++i)
-            {
-                uint32 availableScore = 0;
-
-                if (sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()].find(i) != sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()].end())
-                    availableScore = sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][i];
-
-                player->UpdatePlayerSetting(ModZoneDifficultyString + "score", i, availableScore);
-            }
-
-            sZoneDifficulty->MythicmodeScore.erase(player->GetGUID().GetCounter());
-            CharacterDatabase.Execute("DELETE FROM zone_difficulty_mythicmode_score WHERE GUID = {}", player->GetGUID().GetCounter());
-        }
-    }
-};
-
 class mod_zone_difficulty_petscript : public PetScript
 {
 public:
@@ -470,7 +430,11 @@ public:
         sZoneDifficulty->MythicmodeHpModifier = sConfigMgr->GetOption<float>("ModZoneDifficulty.Mythicmode.HpModifier", 2);
         sZoneDifficulty->MythicmodeEnable = sConfigMgr->GetOption<bool>("ModZoneDifficulty.Mythicmode.Enable", false);
         sZoneDifficulty->MythicmodeInNormalDungeons = sConfigMgr->GetOption<bool>("ModZoneDifficulty.Mythicmode.InNormalDungeons", false);
+        sZoneDifficulty->UseVendorInterface = sConfigMgr->GetOption<bool>("ModZoneDifficulty.UseVendorInterface", false);
         sZoneDifficulty->LoadMapDifficultySettings();
+
+        if (CharacterDatabase.Query("SELECT 1 FROM zone_difficulty_completion_logs WHERE type = {}", TYPE_RAID_T6))
+            sZoneDifficulty->IsBlackTempleDone = true;
     }
 
     void OnStartup() override
@@ -512,6 +476,9 @@ public:
         {
             if (sZoneDifficulty->MythicmodeInstanceData[instanceId])
             {
+                if ((id == 7 /* Illidari Council*/ || id == 5 /* Reliquary of Souls*/) && instance->GetId() == 564)
+                    sZoneDifficulty->AddMythicmodeScore(instance, TYPE_RAID_T6, 1);
+
                 //LOG_INFO("module", "MOD-ZONE-DIFFICULTY: Mythicmode is on.");
                 if (sZoneDifficulty->EncountersInProgress.find(instanceId) != sZoneDifficulty->EncountersInProgress.end() && sZoneDifficulty->EncountersInProgress[instanceId] != 0)
                 {
@@ -588,15 +555,7 @@ public:
                 else if (map->IsRaid())
                 {
                     sZoneDifficulty->AddMythicmodeScore(map, sZoneDifficulty->Expansion[mapId], score);
-
-                    if (source->GetEntry() == NPC_ILLIDAN_STORMRAGE)
-                    {
-                        map->DoForAllPlayers([&](Player* player)
-                        {
-                            player->UpdatePlayerSetting(ModZoneDifficultyString + "ct", SETTING_BLACK_TEMPLE, 1);
-                            ChatHandler(player->GetSession()).PSendSysMessage("Congratulations on completing the Black Temple!");
-                        });
-                    }
+                    sZoneDifficulty->ProcessCreatureDeath(map, source->GetEntry());
                 }
                 /* debug
                  * else
@@ -639,7 +598,7 @@ public:
         {
             npcText = NPC_TEXT_SCORE;
             bool hasAnyScore = false;
-            for (int i = 1; i <= 16; ++i)
+            for (int i = 1; i <= TYPE_MAX_TIERS; ++i)
             {
                 if (uint32 score = player->GetPlayerSetting(ModZoneDifficultyString + "score", i).value)
                 {
@@ -678,7 +637,7 @@ public:
 
             //LOG_INFO("module", "MOD-ZONE-DIFFICULTY: Sending full tier clearance reward for category {}", category);
             sZoneDifficulty->DeductMythicmodeScore(player, category, sZoneDifficulty->TierRewards[category].Price);
-            sZoneDifficulty->SendItem(player, category, 99, 0);
+            sZoneDifficulty->SendItem(player, sZoneDifficulty->TierRewards[category]);
 
             return true;
         }
@@ -705,15 +664,19 @@ public:
                     return true;
                 }
                 npcText = NPC_TEXT_CONFIRM;
-                ItemTemplate const* proto = sObjectMgr->GetItemTemplate(sZoneDifficulty->TierRewards[category].Entry);
-                std::string name = proto->Name1;
 
-                if (ItemLocale const* leftIl = sObjectMgr->GetItemLocale(sZoneDifficulty->TierRewards[category].Entry))
-                    ObjectMgr::GetLocaleString(leftIl->Name, player->GetSession()->GetSessionDbcLocale(), name);
+                if (ItemTemplate const* proto = sObjectMgr->GetItemTemplate(sZoneDifficulty->TierRewards[category].Entry))
+                {
+                    std::string name = proto->Name1;
 
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "No!", GOSSIP_SENDER_MAIN, 999998);
-                AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Acore::StringFormat("Yes, {} is the item I want.", name), GOSSIP_SENDER_MAIN, 99001000 + category);
-                SendGossipMenuFor(player, npcText, creature);
+                    if (ItemLocale const* leftIl = sObjectMgr->GetItemLocale(sZoneDifficulty->TierRewards[category].Entry))
+                        ObjectMgr::GetLocaleString(leftIl->Name, player->GetSession()->GetSessionDbcLocale(), name);
+
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "No!", GOSSIP_SENDER_MAIN, 999998);
+                    AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Acore::StringFormat("Yes, {} is the item I want.", name), GOSSIP_SENDER_MAIN, 99001000 + category);
+                    SendGossipMenuFor(player, npcText, creature);
+                }
+
                 return true;
             }
             return true;
@@ -737,7 +700,8 @@ public:
                 ++i;
             }
         }
-        else if (action < 1200)
+        // Number is too low... ALWAYS remember to check if the number is too low when adding new bracket. Else enjoy crash <3
+        else if (action < 1900)
         {
             npcText = NPC_TEXT_ITEM;
             uint32 category = 0;
@@ -748,6 +712,12 @@ public:
                 counter = counter - 100;
             }
             //LOG_INFO("module", "MOD-ZONE-DIFFICULTY: Building gossip with category {} and counter {}", category, counter);
+
+            if (sZoneDifficulty->UseVendorInterface)
+            {
+                ShowItemsInFakeVendor(player, creature, category, counter);
+                return true;
+            }
 
             for (size_t i = 0; i < sZoneDifficulty->Rewards[category][counter].size(); ++i)
             {
@@ -779,14 +749,10 @@ public:
 
             // Check if the player has enough score in the respective category.
 
-            if (category == TYPE_RAID_T6)
+            if (!sZoneDifficulty->CheckCompletionStatus(creature, player, category))
             {
-                if (!player->GetPlayerSetting(ModZoneDifficultyString + "ct", SETTING_BLACK_TEMPLE).value)
-                {
-                    creature->Whisper("Ah, hero! The threads of fate bring you to me. To claim the rewards you desire, you must first confront Illidan Stormrage on Mythic difficulty.",
-                        LANG_UNIVERSAL, player);
-                    return true;
-                }
+                CloseGossipMenuFor(player);
+                return true;
             }
 
             uint32 availableScore = player->GetPlayerSetting(ModZoneDifficultyString + "score", category).value;
@@ -831,29 +797,7 @@ public:
                 counter = counter - 100;
             }
 
-            // Check (again) if the player has enough score in the respective category.
-            uint32 availableScore = player->GetPlayerSetting(ModZoneDifficultyString + "score", category).value;
-
-            if (availableScore < sZoneDifficulty->Rewards[category][itemType][counter].Price)
-                return true;
-
-            // Check if the player has the neccesary achievement
-            if (sZoneDifficulty->Rewards[category][itemType][counter].Achievement)
-            {
-                if (!player->HasAchieved(sZoneDifficulty->Rewards[category][itemType][counter].Achievement))
-                {
-                    std::string gossip = "You do not have the required achievement with ID ";
-                    gossip.append(std::to_string(sZoneDifficulty->Rewards[category][itemType][counter].Achievement));
-                    gossip.append(" to receive this item. Before i can give it to you, you need to complete the whole dungeon where it can be obtained.");
-                    creature->Whisper(gossip, LANG_UNIVERSAL, player);
-                    CloseGossipMenuFor(player);
-                    return true;
-                }
-            }
-
-            //LOG_INFO("module", "MOD-ZONE-DIFFICULTY: Sending item with category {}, itemType {}, counter {}", category, itemType, counter);
-            sZoneDifficulty->DeductMythicmodeScore(player, category, sZoneDifficulty->Rewards[category][itemType][counter].Price);
-            sZoneDifficulty->SendItem(player, category, itemType, counter);
+            sZoneDifficulty->RewardItem(player, category, itemType, counter, creature, 0);
         }
 
         SendGossipMenuFor(player, npcText, creature);
@@ -877,6 +821,46 @@ public:
 
         SendGossipMenuFor(player, npcText, creature);
         return true;
+    }
+
+    static void ShowItemsInFakeVendor(Player* player, Creature* creature, uint8 category, uint8 slot)
+    {
+        auto const& itemList = sZoneDifficulty->Rewards[category][slot];
+
+        uint32 itemCount = itemList.size();
+
+        WorldPacket data(SMSG_LIST_INVENTORY, 8 + 1 + itemCount * 8 * 4);
+        data << uint64(creature->GetGUID().GetRawValue());
+
+        uint8 count = 0;
+        size_t count_pos = data.wpos();
+        data << uint8(count);
+
+        for (uint32 i = 0; i < itemCount && count < MAX_VENDOR_ITEMS; ++i)
+        {
+            if (ItemTemplate const* _proto = sObjectMgr->GetItemTemplate(itemList[i].Entry))
+                EncodeItemToPacket(data, _proto, count, itemList[i].Price);
+        }
+
+        data.put(count_pos, count);
+        player->GetSession()->SendPacket(&data);
+        VendorSelectionData vendorData;
+        vendorData.category = category;
+        vendorData.slot = slot;
+        sZoneDifficulty->SelectionCache[player->GetGUID()] = vendorData;
+    }
+
+    static void EncodeItemToPacket(WorldPacket& data, ItemTemplate const* proto, uint8& slot, uint32 price)
+    {
+        data << uint32(slot + 1);
+        data << uint32(proto->ItemId);
+        data << uint32(proto->DisplayInfoID);
+        data << int32(-1); //Infinite Stock
+        data << uint32(price);
+        data << uint32(proto->MaxDurability);
+        data << uint32(1);  //Buy Count of 1
+        data << uint32(0);
+        slot++;
     }
 };
 
@@ -1091,64 +1075,114 @@ public:
 
         CreatureBaseStats const* origCreatureStats = sObjectMgr->GetCreatureBaseStats(creature->GetLevel(), creatureTemplate->unit_class);
         uint32 baseHealth = origCreatureStats->GenerateHealth(creatureTemplate);
-        uint32 newHp;
+        uint32 scaledBaseHealth = baseHealth;
         uint32 entry = creature->GetEntry();
-
-        if (sZoneDifficulty->CreatureOverrides.find(entry) == sZoneDifficulty->CreatureOverrides.end())
-        {
-            if (creature->IsDungeonBoss())
-                return;
-
-            newHp = round(baseHealth * sZoneDifficulty->MythicmodeHpModifier);
-        }
-        else
-        {
-            newHp = round(baseHealth * sZoneDifficulty->CreatureOverrides[entry]);
-        }
 
         uint32 phaseMask = creature->GetPhaseMask();
         int matchingPhase = sZoneDifficulty->GetLowestMatchingPhase(creature->GetMapId(), phaseMask);
-        int8 mode = sZoneDifficulty->NerfInfo[mapId][matchingPhase].Enabled;
+        bool isMythic = sZoneDifficulty->MythicmodeInstanceData[creature->GetMap()->GetInstanceId()];
+
+        if (sZoneDifficulty->CreatureOverrides.find(entry) == sZoneDifficulty->CreatureOverrides.end())
+        {
+            // TEMPORARY!!! It conflicts with CC normal mode tuning, dont apply trash tuning to hyjal and ssc
+            if (creature->GetMap()->GetId() == 534 || creature->GetMap()->GetId() == 548)
+                return;
+
+            // Trash mobs. Apply generic tuning.
+            if (!creature->IsDungeonBoss() && isMythic)
+                scaledBaseHealth = round(baseHealth * sZoneDifficulty->MythicmodeHpModifier);
+        }
+        else
+        {
+            float multiplier = isMythic ? sZoneDifficulty->CreatureOverrides[entry].MythicOverride
+                : sZoneDifficulty->CreatureOverrides[entry].NormalOverride;
+
+            if (!multiplier)
+                multiplier = 1.0f; // never 0
+
+            scaledBaseHealth = round(baseHealth * multiplier);
+        }
+
         if (matchingPhase != -1)
         {
-            if (sZoneDifficulty->HasMythicmode(mode) && sZoneDifficulty->MythicmodeInstanceData[creature->GetMap()->GetInstanceId()])
-            {
-                if (creature->GetMaxHealth() == newHp)
-                    return;
+            float scaledHealth = scaledBaseHealth;
+            scaledHealth *= creature->GetModifierValue(UNIT_MOD_HEALTH, BASE_PCT);
+            scaledHealth += creature->GetModifierValue(UNIT_MOD_HEALTH, TOTAL_VALUE);
+            scaledHealth *= creature->GetModifierValue(UNIT_MOD_HEALTH, TOTAL_PCT);
 
-                bool hpIsFull = false;
-
-                if (creature->GetHealthPct() >= 100)
-                    hpIsFull = true;
-
-                creature->SetMaxHealth(newHp);
-                creature->SetCreateHealth(newHp);
-                creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)newHp);
-                if (hpIsFull)
-                    creature->SetHealth(newHp);
-                creature->UpdateAllStats();
-                creature->ResetPlayerDamageReq();
+            if (creature->GetMaxHealth() == scaledHealth)
                 return;
-            }
 
-            if (sZoneDifficulty->MythicmodeInstanceData[creature->GetMap()->GetInstanceId()] == false)
+            float percent = creature->GetHealthPct();
+            creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)scaledBaseHealth);
+            creature->UpdateMaxHealth();
+            if (creature->IsAlive())
             {
-                if (creature->GetMaxHealth() == newHp)
-                {
-                    bool hpIsFull = false;
-                    if (creature->GetHealthPct() >= 100)
-                        hpIsFull = true;
-                    creature->SetMaxHealth(baseHealth);
-                    creature->SetCreateHealth(baseHealth);
-                    creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)baseHealth);
-                    if (hpIsFull)
-                        creature->SetHealth(baseHealth);
-                    creature->UpdateAllStats();
-                    creature->ResetPlayerDamageReq();
-                    return;
-                }
+                uint32 scaledCurHealth = creature->CountPctFromMaxHealth(percent);
+                creature->SetHealth(scaledCurHealth);
+            }
+            creature->ResetPlayerDamageReq();
+        }
+    }
+};
+
+class mod_zone_difficulty_playerscript : public PlayerScript
+{
+public:
+    mod_zone_difficulty_playerscript() : PlayerScript("mod_zone_difficulty_playerscript") { }
+
+    void OnMapChanged(Player* player) override
+    {
+        uint32 mapId = player->GetMapId();
+        if (sZoneDifficulty->DisallowedBuffs.find(mapId) != sZoneDifficulty->DisallowedBuffs.end())
+        {
+            for (auto aura : sZoneDifficulty->DisallowedBuffs[mapId])
+            {
+                player->RemoveAura(aura);
             }
         }
+    }
+
+    void OnLogin(Player* player) override
+    {
+        if (sZoneDifficulty->MythicmodeScore.empty())
+            return;
+
+        if (sZoneDifficulty->MythicmodeScore.find(player->GetGUID().GetCounter()) != sZoneDifficulty->MythicmodeScore.end())
+        {
+            for (int i = 1; i <= 16; ++i)
+            {
+                uint32 availableScore = 0;
+
+                if (sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()].find(i) != sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()].end())
+                    availableScore = sZoneDifficulty->MythicmodeScore[player->GetGUID().GetCounter()][i];
+
+                player->UpdatePlayerSetting(ModZoneDifficultyString + "score", i, availableScore);
+            }
+
+            sZoneDifficulty->MythicmodeScore.erase(player->GetGUID().GetCounter());
+            CharacterDatabase.Execute("DELETE FROM zone_difficulty_mythicmode_score WHERE GUID = {}", player->GetGUID().GetCounter());
+        }
+    }
+
+    void OnLogout(Player* player) override
+    {
+        sZoneDifficulty->SelectionCache.erase(player->GetGUID());
+    }
+
+    void OnBeforeBuyItemFromVendor(Player* player, ObjectGuid vendorguid, uint32 /*vendorslot*/, uint32& itemEntry, uint8 /*count*/, uint8 /*bag*/, uint8 /*slot*/) override
+    {
+        Creature* vendor = player->GetMap()->GetCreature(vendorguid);
+
+        if (!vendor)
+            return;
+        if (vendor->GetEntry() != NPC_REWARD_CHROMIE)
+            return;
+
+        auto const& data = sZoneDifficulty->SelectionCache[player->GetGUID()];
+
+        sZoneDifficulty->RewardItem(player, data.category, data.slot, 0, vendor, itemEntry);
+        itemEntry = 0; //Prevents the handler from proceeding to core vendor handling
     }
 };
 
@@ -1156,11 +1190,11 @@ public:
 void AddModZoneDifficultyScripts()
 {
     new mod_zone_difficulty_unitscript();
-    new mod_zone_difficulty_playerscript();
     new mod_zone_difficulty_petscript();
     new mod_zone_difficulty_worldscript();
     new mod_zone_difficulty_globalscript();
     new mod_zone_difficulty_rewardnpc();
     new mod_zone_difficulty_dungeonmaster();
     new mod_zone_difficulty_allcreaturescript();
+    new mod_zone_difficulty_playerscript();
 }

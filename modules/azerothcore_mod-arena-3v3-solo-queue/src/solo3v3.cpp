@@ -41,10 +41,71 @@ uint32 Solo3v3::GetAverageMMR(ArenaTeam* team)
     return matchMakerRating;
 }
 
+void Solo3v3::CountAsLoss(Player* player, bool isInProgress)
+{
+    if (player->IsSpectator())
+        return;
+
+    ArenaTeam* plrArenaTeam = sArenaTeamMgr->GetArenaTeamById(player->GetArenaTeamId(ARENA_SLOT_SOLO_3v3));
+
+    if (!plrArenaTeam)
+        return;
+
+    int32 ratingLoss = 0;
+
+    // leave while arena is in progress
+    if (isInProgress)
+    {
+        ratingLoss = sConfigMgr->GetOption<int32>("Solo.3v3.RatingPenalty.LeaveDuringMatch", 24);
+    }
+    // leave while arena is in preparation || don't accept queue || logout while invited
+    else
+    {
+        ratingLoss = sConfigMgr->GetOption<int32>("Solo.3v3.RatingPenalty.LeaveBeforeMatchStart", 50);
+    }
+
+    ArenaTeamStats atStats = plrArenaTeam->GetStats();
+
+    if (int32(atStats.Rating) - ratingLoss < 0)
+        atStats.Rating = 0;
+    else
+        atStats.Rating -= ratingLoss;
+
+    atStats.SeasonGames += 1;
+    atStats.WeekGames += 1;
+    atStats.Rank = 1;
+
+    // Update team's rank, start with rank 1 and increase until no team with more rating was found
+    ArenaTeamMgr::ArenaTeamContainer::const_iterator i = sArenaTeamMgr->GetArenaTeamMapBegin();
+    for (; i != sArenaTeamMgr->GetArenaTeamMapEnd(); ++i) {
+        if (i->second->GetType() == ARENA_TEAM_SOLO_3v3 && i->second->GetStats().Rating > atStats.Rating)
+            ++atStats.Rank;
+    }
+
+    for (ArenaTeam::MemberList::iterator itr = plrArenaTeam->GetMembers().begin(); itr != plrArenaTeam->GetMembers().end(); ++itr) {
+        if (itr->Guid == player->GetGUID()) {
+            itr->WeekGames += 1;
+            itr->SeasonGames += 1;
+            itr->PersonalRating = atStats.Rating;
+
+            if (int32(itr->MatchMakerRating) - ratingLoss < 0)
+                itr->MatchMakerRating = 0;
+            else
+                itr->MatchMakerRating -= ratingLoss;
+
+            break;
+        }
+    }
+
+    plrArenaTeam->SetArenaTeamStats(atStats);
+    plrArenaTeam->NotifyStatsChanged();
+    plrArenaTeam->SaveToDB(true);
+}
+
 void Solo3v3::CleanUp3v3SoloQ(Battleground* bg)
 {
     // Cleanup temp arena teams for solo 3v3
-    if (bg->isArena() && bg->isRated() && bg->GetArenaType() == ARENA_TYPE_3v3_SOLO)
+    if (bg->isArena() && bg->GetArenaType() == ARENA_TYPE_3v3_SOLO)
     {
         ArenaTeam* tempAlliArenaTeam = sArenaTeamMgr->GetArenaTeamById(bg->GetArenaTeamIdForTeam(TEAM_ALLIANCE));
         ArenaTeam* tempHordeArenaTeam = sArenaTeamMgr->GetArenaTeamById(bg->GetArenaTeamIdForTeam(TEAM_HORDE));
@@ -65,50 +126,31 @@ void Solo3v3::CleanUp3v3SoloQ(Battleground* bg)
 
 void Solo3v3::CheckStartSolo3v3Arena(Battleground* bg)
 {
-    // Fix crash with Arena Replay module
+    bool someoneNotInArena = false;
+    uint32 PlayersInArena = 0;
+
     for (const auto& playerPair : bg->GetPlayers())
     {
         Player* player = playerPair.second;
+
+        if (!player)
+            continue;
+
+        // prevent crash with Arena Replay module
         if (player->IsSpectator())
             return;
+
+        PlayersInArena++;
     }
 
-    if (bg->GetArenaType() != ARENA_TYPE_3v3_SOLO)
-        return;
-
-    if (bg->GetStatus() != STATUS_IN_PROGRESS)
-        return; // if CheckArenaWinConditions ends the game
-
-    bool someoneNotInArena = false;
-
-    ArenaTeam* team[2];
-    team[0] = sArenaTeamMgr->GetArenaTeamById(bg->GetArenaTeamIdForTeam(TEAM_ALLIANCE));
-    team[1] = sArenaTeamMgr->GetArenaTeamById(bg->GetArenaTeamIdForTeam(TEAM_HORDE));
-
-    ASSERT(team[0] && team[1]);
-
-    for (int i = 0; i < 2; i++)
+    uint32 AmountPlayersSolo3v3 = 6;
+    if (PlayersInArena < AmountPlayersSolo3v3)
     {
-        for (auto const& itr : team[i]->GetMembers())
-        {
-            Player* plr = ObjectAccessor::FindPlayer(itr.Guid);
-            if (!plr)
-            {
-                someoneNotInArena = true;
-                continue;
-            }
-
-            if (plr->GetInstanceId() != bg->GetInstanceID())
-            {
-                if (sConfigMgr->GetOption<bool>("Solo.3v3.CastDeserterOnAfk", true))
-                    plr->CastSpell(plr, 26013, true); // Deserter
-
-                someoneNotInArena = true;
-            }
-        }
+        someoneNotInArena = true;
     }
 
-    if (someoneNotInArena && sConfigMgr->GetOption<bool>("Solo.3v3.StopGameIncomplete", false))
+    // if one player didn't enter arena and StopGameIncomplete is true, then end arena
+    if (someoneNotInArena && sConfigMgr->GetOption<bool>("Solo.3v3.StopGameIncomplete", true))
     {
         bg->SetRated(false);
         bg->EndBattleground(TEAM_NEUTRAL);
@@ -126,9 +168,12 @@ bool Solo3v3::CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId 
     queue->m_SelectionPools[TEAM_ALLIANCE].Init();
     queue->m_SelectionPools[TEAM_HORDE].Init();
 
-    uint32 MinPlayersPerTeam = 3;
+    uint32 MinPlayersPerTeam = sBattlegroundMgr->isArenaTesting() ? 1 : 3;
 
     bool filterTalents = sConfigMgr->GetOption<bool>("Solo.3v3.FilterTalents", false);
+
+    uint8 factionGroupTypeAlliance =  isRated ? BG_QUEUE_PREMADE_ALLIANCE : BG_QUEUE_NORMAL_ALLIANCE;
+    uint8 factionGroupTypeHorde = isRated ? BG_QUEUE_PREMADE_HORDE : BG_QUEUE_NORMAL_HORDE;
 
     for (int teamId = 0; teamId < 2; teamId++) // BG_QUEUE_PREMADE_ALLIANCE and BG_QUEUE_PREMADE_HORDE
     {
@@ -155,7 +200,7 @@ bool Solo3v3::CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId 
                     return false;
 
                 Solo3v3TalentCat playerSlotIndex;
-                if (sConfigMgr->GetOption<bool>("Solo.3v3.FilterTalents", false))
+                if (filterTalents)
                     playerSlotIndex = GetTalentCatForSolo3v3(plr);
                 else
                     playerSlotIndex = GetFirstAvailableSlot(soloTeam);
@@ -170,9 +215,9 @@ bool Solo3v3::CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId 
                         if ((*itr)->teamId != TEAM_ALLIANCE) // move to other team
                         {
                             (*itr)->teamId = TEAM_ALLIANCE;
-                            (*itr)->GroupType = BG_QUEUE_PREMADE_ALLIANCE;
-                            queue->m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].push_front((*itr));
-                            itr = queue->m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].erase(itr);
+                            (*itr)->GroupType = factionGroupTypeAlliance;
+                            queue->m_QueuedGroups[bracket_id][factionGroupTypeAlliance].push_front((*itr));
+                            itr = queue->m_QueuedGroups[bracket_id][factionGroupTypeHorde].erase(itr);
                             return CheckSolo3v3Arena(queue, bracket_id, isRated);
                         }
                     }
@@ -186,9 +231,9 @@ bool Solo3v3::CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId 
                         if ((*itr)->teamId != TEAM_HORDE) // move to other team
                         {
                             (*itr)->teamId = TEAM_HORDE;
-                            (*itr)->GroupType = BG_QUEUE_PREMADE_HORDE;
-                            queue->m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].push_front((*itr));
-                            itr = queue->m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].erase(itr);
+                            (*itr)->GroupType = factionGroupTypeHorde;
+                            queue->m_QueuedGroups[bracket_id][factionGroupTypeHorde].push_front((*itr));
+                            itr = queue->m_QueuedGroups[bracket_id][factionGroupTypeAlliance].erase(itr);
                             return CheckSolo3v3Arena(queue, bracket_id, isRated);
                         }
                     }

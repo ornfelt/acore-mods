@@ -16,6 +16,14 @@
  */
 
 #include "solo3v3_sc.h"
+#include <unordered_map>
+
+struct ArenaTeamsRating {
+    uint32 allianceRating;
+    uint32 hordeRating;
+    uint8 playersCount = 0;
+};
+std::unordered_map<uint32, ArenaTeamsRating> bgArenaTeamsRating;
 
 void NpcSolo3v3::Initialize()
 {
@@ -52,10 +60,10 @@ bool NpcSolo3v3::OnGossipHello(Player* player, Creature* creature)
     AddGossipItemFor(player, GOSSIP_ICON_CHAT, infoQueue.str().c_str(), GOSSIP_SENDER_MAIN, 0);
 
     if (player->InBattlegroundQueueForBattlegroundQueueType((BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_3v3_SOLO))
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/ICONS/Achievement_Arena_2v2_7:30|t Leave Solo queue", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_LEAVE_QUEUE, "Are you sure you want to remove the solo queue?", 0, false);
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/ICONS/Achievement_Arena_2v2_7:30:30:-18:0|t Leave Solo queue", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_LEAVE_QUEUE, "Are you sure you want to remove the solo queue?", 0, false);
 
     if (!player->InBattlegroundQueueForBattlegroundQueueType((BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_3v3_SOLO))
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/ICONS/Achievement_Arena_3v3_5:30|t Queue up for 3vs3 Arena Solo (UnRated)\n", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_JOIN_QUEUE_ARENA_UNRATED);
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/ICONS/Achievement_Arena_3v3_5:30:30:-18:0|t Queue 3v3soloQ (UnRated)\n", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_JOIN_QUEUE_ARENA_UNRATED);
 
     if (!player->GetArenaTeamId(ARENA_SLOT_SOLO_3v3))
     {
@@ -63,20 +71,20 @@ bool NpcSolo3v3::OnGossipHello(Player* player, Creature* creature)
         if (player->IsPvP())
             cost = 0;
 
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/ICONS/Achievement_Arena_2v2_7:30|t  Create new Solo arena team", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_CREATE_ARENA_TEAM, "Create new solo arena team?", cost, false);
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/ICONS/Achievement_Arena_2v2_7:30:30:-18:0|t  Create new Solo arena team", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_CREATE_ARENA_TEAM, "Create new solo arena team?", cost, false);
     }
     else
     {
         if (!player->InBattlegroundQueueForBattlegroundQueueType((BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_3v3_SOLO))
         {
-            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/ICONS/Achievement_Arena_3v3_5:30|t Queue up for 3vs3 Arena Solo (Rated)\n", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_JOIN_QUEUE_ARENA_RATED);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "|TInterface/ICONS/Achievement_Arena_2v2_7:30|t Disband Arena team", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_DISBAND_ARENATEAM, "Are you sure?", 0, false);
+            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/ICONS/Achievement_Arena_3v3_5:30:30:-18:0|t Queue 3v3soloQ (Rated)\n", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_JOIN_QUEUE_ARENA_RATED);
+            AddGossipItemFor(player, GOSSIP_ICON_DOT, "|TInterface/ICONS/Achievement_Arena_2v2_7:30:30:-18:0|t Disband Arena team", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_DISBAND_ARENATEAM, "Are you sure?", 0, false);
         }
 
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "|TInterface/ICONS/INV_Misc_Coin_01:30|t Show statistics", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_GET_STATISTICS);
+        AddGossipItemFor(player, GOSSIP_ICON_DOT, "|TInterface/ICONS/INV_Misc_Coin_01:30:30:-18:0|t Show statistics", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_GET_STATISTICS);
     }
 
-    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "|TInterface/ICONS/INV_Misc_Coin_03:30|t How to Use NPC?", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_SCRIPT_INFO);
+    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "|TInterface/ICONS/inv_misc_questionmark:30:30:-20:0|t Help", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_SCRIPT_INFO);
 
     SendGossipMenuFor(player, 60015, creature->GetGUID());
 
@@ -106,7 +114,7 @@ bool NpcSolo3v3::OnGossipSelect(Player* player, Creature* creature, uint32 /*sen
             }
             else
             {
-                ChatHandler(player->GetSession()).PSendSysMessage("You need level %u+ to create an arena team.", sConfigMgr->GetOption<uint32>("Solo.3v3.MinLevel", 80));
+                ChatHandler(player->GetSession()).PSendSysMessage("You need level {}+ to create an arena team.", sConfigMgr->GetOption<uint32>("Solo.3v3.MinLevel", 80));
             }
 
             CloseGossipMenuFor(player);
@@ -180,6 +188,19 @@ bool NpcSolo3v3::OnGossipSelect(Player* player, Creature* creature, uint32 /*sen
 
                 ChatHandler(player->GetSession()).PSendSysMessage("{}", s.str().c_str());
                 CloseGossipMenuFor(player);
+
+                ArenaTeam::MemberList::iterator itr;
+                for (itr = at->GetMembers().begin(); itr != at->GetMembers().end(); ++itr)
+                {
+                    if (itr->Guid == player->GetGUID())
+                    {
+                        std::stringstream s;
+                        s << "\nSolo MMR: " << itr->MatchMakerRating;
+
+                        ChatHandler(player->GetSession()).PSendSysMessage("{}", s.str().c_str());
+                        break;
+                    }
+                }
             }
 
             return true;
@@ -197,14 +218,19 @@ bool NpcSolo3v3::OnGossipSelect(Player* player, Creature* creature, uint32 /*sen
 
         case NPC_3v3_ACTION_SCRIPT_INFO:
         {
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Click on Create new 3v3 SoloQ Arena team", GOSSIP_SENDER_MAIN, action);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Join 3v3 SoloQ Arena and ready!", GOSSIP_SENDER_MAIN, action);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Enjoy!", GOSSIP_SENDER_MAIN, action);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<- Back", GOSSIP_SENDER_MAIN, 7);
-            SendGossipMenuFor(player, 68, creature->GetGUID());
+
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<- Back", GOSSIP_SENDER_MAIN, NPC_3v3_ACTION_MAIN_MENU);
+            SendGossipMenuFor(player, NPC_TEXT_3v3, creature->GetGUID());
             return true;
         }
         break;
+
+        case NPC_3v3_ACTION_MAIN_MENU:
+        {
+            OnGossipHello(player, creature);
+            return true;
+        }
+
     }
 
     OnGossipHello(player, creature);
@@ -493,8 +519,14 @@ void Solo3v3BG::OnQueueUpdate(BattlegroundQueue* queue, uint32 /*diff*/, Battleg
         arena->SetArenaTeamIdForTeam(TEAM_ALLIANCE, arenaTeams[TEAM_ALLIANCE]->GetId());
         arena->SetArenaTeamIdForTeam(TEAM_HORDE, arenaTeams[TEAM_HORDE]->GetId());
 
-        oldTeamRatingAlliance = arenaTeams[TEAM_ALLIANCE]->GetStats().Rating;
-        oldTeamRatingHorde = arenaTeams[TEAM_HORDE]->GetStats().Rating;
+        if (isRated) {
+            ArenaTeamsRating arenaTeamsRating;
+
+            arenaTeamsRating.allianceRating = arenaTeams[TEAM_ALLIANCE]->GetStats().Rating;
+            arenaTeamsRating.hordeRating = arenaTeams[TEAM_HORDE]->GetStats().Rating;
+
+            bgArenaTeamsRating[arena->GetInstanceID()] = arenaTeamsRating;
+        }
 
         // Set matchmaker rating for calculating rating-modifier on EndBattleground (when a team has won/lost)
         arena->SetArenaMatchmakerRating(TEAM_ALLIANCE, sSolo->GetAverageMMR(arenaTeams[TEAM_ALLIANCE]));
@@ -514,14 +546,6 @@ bool Solo3v3BG::OnQueueUpdateValidity(BattlegroundQueue* /* queue */, uint32 /*d
     return true;
 }
 
-void Solo3v3BG::OnBattlegroundUpdate(Battleground* bg, uint32 /*diff*/)
-{
-    if (bg->GetStatus() != STATUS_IN_PROGRESS || !bg->isArena())
-        return;
-
-    sSolo->CheckStartSolo3v3Arena(bg);
-}
-
 void Solo3v3BG::OnBattlegroundDestroy(Battleground* bg)
 {
     sSolo->CleanUp3v3SoloQ(bg);
@@ -531,7 +555,8 @@ void Solo3v3BG::OnBattlegroundEndReward(Battleground* bg, Player* player, TeamId
 {
     if (bg->isRated() && bg->GetArenaType() == ARENA_TYPE_3v3_SOLO)
     {
-        ArenaTeam* plrArenaTeam = sArenaTeamMgr->GetArenaTeamByCaptain(player->GetGUID(), ARENA_TYPE_3v3_SOLO);
+        // this way we always get the correct solo team (sometimes when using GetArenaTeamByCaptain inside solo arena it can return a teamID >= 4293918720)
+        ArenaTeam* plrArenaTeam = sArenaTeamMgr->GetArenaTeamById(player->GetArenaTeamId(ARENA_SLOT_SOLO_3v3));
 
         if (!plrArenaTeam)
             return;
@@ -539,6 +564,11 @@ void Solo3v3BG::OnBattlegroundEndReward(Battleground* bg, Player* player, TeamId
         ArenaTeamStats atStats = plrArenaTeam->GetStats();
         int32 ratingModifier;
         int32 oldTeamRating;
+
+        uint32 oldTeamRatingAlliance = bgArenaTeamsRating[bg->GetInstanceID()].allianceRating;
+        uint32 oldTeamRatingHorde = bgArenaTeamsRating[bg->GetInstanceID()].hordeRating;
+
+        bgArenaTeamsRating[bg->GetInstanceID()].playersCount += 1;
 
         TeamId bgTeamId = player->GetBgTeamId();
         const bool isPlayerWinning = bgTeamId == winnerTeamId;
@@ -567,24 +597,21 @@ void Solo3v3BG::OnBattlegroundEndReward(Battleground* bg, Player* player, TeamId
         atStats.Rank = 1;
         ArenaTeamMgr::ArenaTeamContainer::const_iterator i = sArenaTeamMgr->GetArenaTeamMapBegin();
         for (; i != sArenaTeamMgr->GetArenaTeamMapEnd(); ++i) {
-            if (i->second->GetType() == ARENA_TYPE_3v3_SOLO && i->second->GetStats().Rating > atStats.Rating)
+            if (i->second->GetType() == ARENA_TEAM_SOLO_3v3 && i->second->GetStats().Rating > atStats.Rating)
                 ++atStats.Rank;
         }
-
-        plrArenaTeam->SetArenaTeamStats(atStats);
-        plrArenaTeam->NotifyStatsChanged();
 
         for (ArenaTeam::MemberList::iterator itr = plrArenaTeam->GetMembers().begin(); itr != plrArenaTeam->GetMembers().end(); ++itr)
         {
             if (itr->Guid == player->GetGUID())
             {
                 itr->PersonalRating = atStats.Rating;
-                itr->WeekWins = atStats.WeekWins;
-                itr->SeasonWins = atStats.SeasonWins;
-                itr->WeekGames = atStats.WeekGames;
-                itr->SeasonGames = atStats.SeasonGames;
+                itr->WeekGames += 1;
+                itr->SeasonGames += 1;
 
                 if (isPlayerWinning) {
+                    itr->WeekWins += 1;
+                    itr->SeasonWins += 1;
                     // itr->MatchMakerRating = bg->GetArenaMatchmakerRating(winnerTeamId);
                     itr->MatchMakerRating += ratingModifier;
                     itr->MaxMMR = std::max(itr->MaxMMR, itr->MatchMakerRating);
@@ -602,7 +629,13 @@ void Solo3v3BG::OnBattlegroundEndReward(Battleground* bg, Player* player, TeamId
 
         }
 
+        plrArenaTeam->SetArenaTeamStats(atStats);
+        plrArenaTeam->NotifyStatsChanged();
         plrArenaTeam->SaveToDB(true);
+
+        // if all the players rating have been processed, delete the stored bg rating informations
+        if (bgArenaTeamsRating[bg->GetInstanceID()].playersCount == bg->GetPlayersSize())
+            bgArenaTeamsRating.erase(bg->GetInstanceID());
     }
 }
 
@@ -628,7 +661,13 @@ void Team3v3arena::OnGetArenaPoints(ArenaTeam* at, float& points)
 {
     if (at->GetType() == ARENA_TYPE_3v3_SOLO)
     {
-        points *= sConfigMgr->GetOption<float>("Solo.3v3.ArenaPointsMulti", 0.8f);
+        const auto Members = at->GetMembers();
+        uint8 playerLevel = sCharacterCache->GetCharacterLevelByGuid(Members.front().Guid);
+
+        if (playerLevel >= sConfigMgr->GetOption<uint32>("Solo.3v3.ArenaPointsMinLevel", 70))
+            points *= sConfigMgr->GetOption<float>("Solo.3v3.ArenaPointsMulti", 0.8f);
+        else
+            points *= 0;
     }
 }
 
@@ -648,9 +687,94 @@ void Team3v3arena::OnQueueIdToArenaType(const BattlegroundQueueTypeId _bgQueueTy
     }
 }
 
+void Arena_SC::OnArenaStart(Battleground* bg)
+{
+    if (bg->GetArenaType() != ARENA_TYPE_3v3_SOLO)
+        return;
+
+    sSolo->CheckStartSolo3v3Arena(bg);
+}
+
+void PlayerScript3v3Arena::OnBattlegroundDesertion(Player* player, const BattlegroundDesertionType type)
+{
+    Battleground* bg = ((BattlegroundMap*)player->FindMap())->GetBG();
+
+    switch (type)
+    {
+        case ARENA_DESERTION_TYPE_LEAVE_BG:
+
+            if (bg->GetArenaType() == ARENA_TYPE_3v3_SOLO)
+            {
+                if (bg->GetStatus() == STATUS_WAIT_JOIN)
+                {
+                    if (sConfigMgr->GetOption<bool>("Solo.3v3.CastDeserterOnAfk", true) || sConfigMgr->GetOption<bool>("Solo.3v3.CastDeserterOnLeave", true))
+                        player->CastSpell(player, 26013, true);
+
+                    // end arena if a player leaves while in preparation
+                    if (sConfigMgr->GetOption<bool>("Solo.3v3.StopGameIncomplete", true))
+                    {
+                        bg->SetRated(false);
+                        bg->EndBattleground(TEAM_NEUTRAL);
+                    }
+
+                    sSolo->CountAsLoss(player, false);
+                }
+
+                if (bg->GetStatus() == STATUS_IN_PROGRESS)
+                    sSolo->CountAsLoss(player, true);
+            }
+            break;
+
+        case ARENA_DESERTION_TYPE_NO_ENTER_BUTTON: // called if player doesn't click 'enter arena' for solo 3v3
+
+            if (player->IsInvitedForBattlegroundQueueType((BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_3v3_SOLO))
+            {
+                if (sConfigMgr->GetOption<bool>("Solo.3v3.CastDeserterOnAfk", true))
+                    player->CastSpell(player, 26013, true);
+
+                sSolo->CountAsLoss(player, false);
+            }
+            break;
+
+        case ARENA_DESERTION_TYPE_INVITE_LOGOUT: // called if player logout when solo 3v3 queue pops (it removes the queue)
+
+            if (player->IsInvitedForBattlegroundQueueType((BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_3v3_SOLO))
+            {
+                if (sConfigMgr->GetOption<bool>("Solo.3v3.CastDeserterOnAfk", true) || sConfigMgr->GetOption<bool>("Solo.3v3.CastDeserterOnLeave", true))
+                    player->CastSpell(player, 26013, true);
+
+                sSolo->CountAsLoss(player, false);
+            }
+            break;
+
+            /*
+            case ARENA_DESERTION_TYPE_LEAVE_QUEUE: // called if player uses macro to leave queue when it pops. /run AcceptBattlefieldPort(1, 0);
+
+                // I believe these are being called AFTER the player removes the queue, so we can't know his queue
+                if (player->IsInvitedForBattlegroundQueueType((BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_3v3_SOLO))
+                {
+                    LOG_ERROR("solo3v3", "IsInvitedForBattlegroundQueueType BATTLEGROUND_QUEUE_3v3_SOLO");
+                    sSolo->CountAsLoss(player, false);
+
+                }
+                else if (player->InBattlegroundQueueForBattlegroundQueueType((BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_3v3_SOLO))
+                {
+                    LOG_ERROR("solo3v3", "InBattlegroundQueueForBattlegroundQueueType BATTLEGROUND_QUEUE_3v3_SOLO");
+                }
+                else
+                {
+                    LOG_ERROR("solo3v3", "ARENA_DESERTION_TYPE_LEAVE_QUEUE - else");
+                }
+            */
+
+        default:
+            break;
+    }
+}
+
 void PlayerScript3v3Arena::OnLogin(Player* pPlayer)
 {
-    if (sConfigMgr->GetOption<bool>("Solo.3v3.Enable", false)) {
+    if (sConfigMgr->GetOption<bool>("Solo.3v3.ShowMessageOnLogin", false)) {
         ChatHandler(pPlayer->GetSession()).SendSysMessage("This server is running the |cff4CFF00Arena solo Q 3v3 |rmodule.");
     }
 }
@@ -704,7 +828,6 @@ bool PlayerScript3v3Arena::NotSetArenaTeamInfoField(Player* player, uint8 slot, 
     return true;
 }
 
-
 bool PlayerScript3v3Arena::CanBattleFieldPort(Player* player, uint8 arenaType, BattlegroundTypeId BGTypeID, uint8 /*action*/)
 {
     if (!player)
@@ -720,33 +843,6 @@ bool PlayerScript3v3Arena::CanBattleFieldPort(Player* player, uint8 arenaType, B
 
     return true;
 }
-
-
-// class Spell_SC : public SpellSC
-// {
-// public:
-//     Spell_SC() : SpellSC("Spell_SC") { }
-
-//     bool CanSelectSpecTalent(Spell* spell) override
-//     {
-//         if (!spell)
-//             return false;
-
-//         if (spell->GetCaster()->isPlayer())
-//         {
-//             Player* plr = spell->GetCaster()->ToPlayer();
-
-//             if (plr->InBattlegroundQueueForBattlegroundQueueType((BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_3v3_SOLO) /*||
-//                 plr->InBattlegroundQueueForBattlegroundQueueType((BattlegroundQueueTypeId)BATTLEGROUND_QUEUE_1v1)*/)
-//             {
-//                 plr->GetSession()->SendAreaTriggerMessage("You can't change your talents while in queue for 3v3."); // or 1v1
-//                 return false;
-//             }
-//         }
-
-//         return true;
-//     }
-// }
 
 void AddSC_Solo_3v3_Arena()
 {
@@ -771,4 +867,5 @@ void AddSC_Solo_3v3_Arena()
     new ConfigLoader3v3Arena();
     new PlayerScript3v3Arena();
     new Arena_SC();
+    new Solo3v3Spell();
 }

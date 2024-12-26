@@ -1,0 +1,33 @@
+#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+#
+
+[worldserver]
+
+########################################
+# ModResurrectionScroll
+########################################
+#
+#    ModResurrectionScroll.Enable
+#        Description: Enable my module.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+ModResurrectionScroll.Enable = 0
+
+#
+#    ModResurrectionScroll.DaysInactive
+#        Description: How many days the character must have been logged off to be eligible.
+#        Default:     180 - 6 months
+#
+
+ModResurrectionScroll.DaysInactive = 180
+
+#
+#    ModResurrectionScroll.Duration
+#        Description: How long the rested XP bonus lasts.
+#        Default:     30 (days)
+#
+
+ModResurrectionScroll.Duration = 30

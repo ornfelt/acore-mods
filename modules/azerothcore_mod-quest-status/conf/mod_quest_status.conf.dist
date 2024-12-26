@@ -1,0 +1,8 @@
+[worldserver]
+
+#
+#   Enable Announces that the module is activated or deactivated.
+#   Default: true
+#
+
+AnnouncePlayer.enable = true

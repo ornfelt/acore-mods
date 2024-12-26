@@ -685,6 +685,20 @@ AutoBalance.MinCCDurationModifier=0.25
 #        Default:     1.0
 AutoBalance.MaxCCDurationModifier=1.0
 
+#
+#     AutoBalance.NpcBot.DamageTaken.PerCreature
+#        Description: Damage taken by NpcBots multiplier per creature dealing the damage.
+#        Example:     AutoBalance.NpcBot.DamageTaken.PerCreature="6 100.0" will make Kobold Vermin deal x100 more damage (before armor/level calculations)
+#        Default:     "" - (Disable)
+AutoBalance.NpcBot.DamageTaken.PerCreature=""
+
+#
+#     AutoBalance.NpcBot.DamageTaken.PerSpellId
+#        Description: Damage taken by NpcBots multiplier from creature spells per spell id.
+#        Example:     AutoBalance.NpcBot.DamageTaken.PerSpellId="16144 0.1" will cause spell 16144 deal 10% of its damage if casted by creature
+#        Default:     "" - (Disable)
+AutoBalance.NpcBot.DamageTaken.PerSpellId=""
+
 ##########################
 #
 # Misc Settings

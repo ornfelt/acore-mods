@@ -24,19 +24,14 @@
 #include "Player.h"
 
 // Custom 1v1 Arena Rated
-constexpr uint32 ARENA_TYPE_1v1 = 1;
-constexpr uint32 ARENA_TEAM_1v1 = 1;
-constexpr uint32 ARENA_SLOT_1v1 = 3;
 constexpr uint32 BATTLEGROUND_QUEUE_1v1 = 11;
-constexpr BattlegroundQueueTypeId bgQueueTypeId1v1 = (BattlegroundQueueTypeId)((int)BATTLEGROUND_QUEUE_5v5 + 1);
 
-// custom 3v3 Arena
+// custom 3v3 Arena solo
 constexpr uint32 ARENA_TYPE_3v3_SOLO = 4;
 constexpr uint32 ARENA_TEAM_SOLO_3v3 = 4;
 constexpr uint32 ARENA_SLOT_SOLO_3v3 = 4;
 constexpr uint32 BATTLEGROUND_QUEUE_3v3_SOLO = 12;
 constexpr BattlegroundQueueTypeId bgQueueTypeId = (BattlegroundQueueTypeId)((int) BATTLEGROUND_QUEUE_3v3_SOLO);
-
 
 const uint32 FORBIDDEN_TALENTS_IN_1V1_ARENA[] =
 {
@@ -127,6 +122,7 @@ public:
     void CleanUp3v3SoloQ(Battleground* bg);
     bool CheckSolo3v3Arena(BattlegroundQueue* queue, BattlegroundBracketId bracket_id, bool isRated);
     void CreateTempArenaTeamForQueue(BattlegroundQueue* queue, ArenaTeam* arenaTeams[]);
+    void CountAsLoss(Player* player, bool isInProgress);
 
     // Return false, if player have invested more than 35 talentpoints in a forbidden talenttree.
     bool Arena3v3CheckTalents(Player* player);

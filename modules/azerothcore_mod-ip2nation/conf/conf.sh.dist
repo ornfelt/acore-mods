@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+#
+# CUSTOM
+#
+
+DB_AUTH_CUSTOM_PATHS+=(
+    "$MOD_IP2NATION_ROOT/sql/auth/"
+)

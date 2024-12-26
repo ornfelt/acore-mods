@@ -23,6 +23,8 @@
 #include "Chat.h"
 #include "npc_1v1arena.h"
 
+#define NPC_TEXT_ENTRY_1v1 999992
+
 //Const for 1v1 arena
 constexpr uint32 ARENA_TEAM_1V1 = 1;
 constexpr uint32 ARENA_TYPE_1V1 = 1;
@@ -39,7 +41,9 @@ enum npcActions {
     NPC_ARENA_1V1_ACTION_LEAVE_QUEUE = 3,
     NPC_ARENA_1V1_ACTION_GET_STATISTICS = 4,
     NPC_ARENA_1V1_ACTION_DISBAND_ARENA_TEAM = 5,
-    NPC_ARENA_1V1_ACTION_JOIN_QUEUE_ARENA_UNRATED = 20
+    NPC_ARENA_1V1_ACTION_JOIN_QUEUE_ARENA_UNRATED = 20,
+    NPC_ARENA_1V1_MAIN_MENU = 21,
+    NPC_ARENA_1V1_ACTION_HELP = 22,
 };
 
 
@@ -48,6 +52,7 @@ bool teamExistForPlayerGuid(Player* player)
     QueryResult queryPlayerTeam = CharacterDatabase.Query("SELECT * FROM `arena_team` WHERE `captainGuid`={} AND `type`=1", player->GetGUID().GetCounter());
     if (queryPlayerTeam)
         return true;
+
     return false;
 }
 
@@ -57,7 +62,7 @@ void deleteTeamArenaForPlayer(Player* player)
     if (queryPlayerTeam)
     {
         CharacterDatabase.Execute("DELETE FROM `arena_team` WHERE `captainGuid`={} AND `type`=1", player->GetGUID().GetCounter());
-        CharacterDatabase.Execute("DELETE FROM `arena_team_member` WHERE `guid`={}", player->GetGUID().GetCounter());
+        CharacterDatabase.Execute("DELETE FROM `arena_team_member` WHERE `guid`={} AND `type`=1", player->GetGUID().GetCounter());
     }
 }
 
@@ -71,9 +76,7 @@ public:
         std::stringstream ss(sConfigMgr->GetOption<std::string>("Arena1v1.ForbiddenTalentsIDs", "0"));
 
         for (std::string blockedTalentsStr; std::getline(ss, blockedTalentsStr, ',');)
-        {
             forbiddenTalents.push_back(stoi(blockedTalentsStr));
-        }
 
         ARENA_SLOT_1V1 = sConfigMgr->GetOption<uint32>("Arena1v1.ArenaSlotID", 3);
 
@@ -101,12 +104,8 @@ public:
     void OnGetMaxPersonalArenaRatingRequirement(const Player* player, uint32 minslot, uint32& maxArenaRating) const override
     {
         if (sConfigMgr->GetOption<bool>("Arena1v1.VendorRating", false) && minslot < (uint32)sConfigMgr->GetOption<uint32>("Arena1v1.ArenaSlotID", 3))
-        {
             if (ArenaTeam* at = sArenaTeamMgr->GetArenaTeamByCaptain(player->GetGUID(), ARENA_TEAM_1V1))
-            {
                 maxArenaRating = std::max(at->GetRating(), maxArenaRating);
-            }
-        }
     }
 
     void OnGetArenaTeamId(Player* player, uint8 slot, uint32& result) override
@@ -132,28 +131,26 @@ bool npc_1v1arena::OnGossipHello(Player* player, Creature* creature)
     }
 
     if (player->InBattlegroundQueueForBattlegroundQueueType(bgQueueTypeId))
-    {
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Queue leave 1v1 Arena", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_LEAVE_QUEUE, "Are you sure?", 0, false);
-    }
+        AddGossipItemFor(player, GOSSIP_ICON_DOT, "|TInterface/ICONS/Achievement_Arena_2v2_7:30:30:-20:0|t Queue leave 1v1 Arena", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_LEAVE_QUEUE, "Are you sure?", 0, false);
     else
-    {
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Queue enter 1v1 Arena (UnRated)", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_JOIN_QUEUE_ARENA_UNRATED);
-    }
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "|TInterface\\icons\\Achievement_Arena_2v2_4:30:30:-20:0|t Queue enter 1v1 Arena (UnRated)", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_JOIN_QUEUE_ARENA_UNRATED);
 
     if (!teamExistForPlayerGuid(player))
     {
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Create new 1v1 Arena Team", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_CREATE_ARENA_TEAM, "Are you sure?", sConfigMgr->GetOption<uint32>("Arena1v1.Costs", 400000), false);
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "|TInterface/ICONS/Achievement_Arena_2v2_7:30:30:-20:0|t Create new 1v1 Arena Team", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_CREATE_ARENA_TEAM, "Are you sure?", sConfigMgr->GetOption<uint32>("Arena1v1.Costs", 400000), false);
     }
     else
     {
         if (!player->InBattlegroundQueueForBattlegroundQueueType(bgQueueTypeId))
         {
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Queue enter 1v1 Arena (Rated)", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_JOIN_QUEUE_ARENA_RATED);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Arenateam Clear", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_DISBAND_ARENA_TEAM, "Are you sure?", 0, false);
+            AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "|TInterface\\icons\\Achievement_Arena_2v2_1:30:30:-20:0|t Queue enter 1v1 Arena (Rated)", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_JOIN_QUEUE_ARENA_RATED);
+            AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "|TInterface/ICONS/Achievement_Arena_2v2_7:30:30:-20:0|t Arenateam Clear", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_DISBAND_ARENA_TEAM, "Are you sure?", 0, false);
         }
 
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Shows your statistics", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_GET_STATISTICS);
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "|TInterface/ICONS/INV_Misc_Coin_01:30:30:-20:0|t Shows your statistics", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_GET_STATISTICS);
     }
+
+    AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "|TInterface/ICONS/inv_misc_questionmark:30:30:-20:0|t Help", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_ACTION_HELP);
 
     SendGossipMenuFor(player, 68, creature);
     return true;
@@ -179,7 +176,7 @@ bool npc_1v1arena::OnGossipSelect(Player* player, Creature* creature, uint32 /*s
             }
             else
             {
-                handler.PSendSysMessage("You have to be level %u + to create a 1v1 arena team.", sConfigMgr->GetOption<uint32>("Arena1v1.MinLevel", 70));
+                handler.PSendSysMessage("You have to be level {} + to create a 1v1 arena team.", sConfigMgr->GetOption<uint32>("Arena1v1.MinLevel", 70));
                 return true;
             }
             CloseGossipMenuFor(player);
@@ -194,7 +191,7 @@ bool npc_1v1arena::OnGossipSelect(Player* player, Creature* creature, uint32 /*s
             CloseGossipMenuFor(player);
             return true;
         }
-        break;
+
 
         case NPC_ARENA_1V1_ACTION_JOIN_QUEUE_ARENA_UNRATED:
         {
@@ -204,7 +201,6 @@ bool npc_1v1arena::OnGossipSelect(Player* player, Creature* creature, uint32 /*s
             CloseGossipMenuFor(player);
             return true;
         }
-        break;
 
         case NPC_ARENA_1V1_ACTION_LEAVE_QUEUE:
         {
@@ -219,7 +215,7 @@ bool npc_1v1arena::OnGossipSelect(Player* player, Creature* creature, uint32 /*s
             CloseGossipMenuFor(player);
             return true;
         }
-        break;
+
 
         case NPC_ARENA_1V1_ACTION_GET_STATISTICS:
         {
@@ -242,15 +238,35 @@ bool npc_1v1arena::OnGossipSelect(Player* player, Creature* creature, uint32 /*s
 
         case NPC_ARENA_1V1_ACTION_DISBAND_ARENA_TEAM:
         {
+            uint32 playerHonorPoints = player->GetHonorPoints();
+            uint32 playerArenaPoints = player->GetArenaPoints();
+
             WorldPacket Data;
             Data << player->GetArenaTeamId(ARENA_SLOT_1V1);
             player->GetSession()->HandleArenaTeamLeaveOpcode(Data);
             handler.SendSysMessage("Arenateam deleted!");
             CloseGossipMenuFor(player);
+
+            // hackfix: restore points
+            player->SetHonorPoints(playerHonorPoints);
+            player->SetArenaPoints(playerArenaPoints);
+
             return true;
         }
+
+        case NPC_ARENA_1V1_ACTION_HELP:
+        {
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<- Back", GOSSIP_SENDER_MAIN, NPC_ARENA_1V1_MAIN_MENU);
+            SendGossipMenuFor(player, NPC_TEXT_ENTRY_1v1, creature->GetGUID());
+        }
         break;
+
+        case NPC_ARENA_1V1_MAIN_MENU:
+            OnGossipHello(player, creature);
+            break;
+
     }
+
     return true;
 }
 
@@ -344,18 +360,18 @@ bool npc_1v1arena::CreateArenateam(Player* player, Creature* /* me */)
     if (slot == 0)
         return false;
 
-    // This disaster is the result of changing the MAX_ARENA_SLOT from 3 to 4.
-    uint32 playerHonorPoints = player->GetHonorPoints();
-    uint32 playerArenaPoints = player->GetArenaPoints();
-    player->SetHonorPoints(0);
-    player->SetArenaPoints(0);
-
     // Check if player is already in an arena team
     if (player->GetArenaTeamId(slot))
     {
         player->GetSession()->SendArenaTeamCommandResult(ERR_ARENA_TEAM_CREATE_S, player->GetName(), "You are already in an arena team!", ERR_ALREADY_IN_ARENA_TEAM);
         return false;
     }
+
+    // This disaster is the result of changing the MAX_ARENA_SLOT from 3 to 4.
+    uint32 playerHonorPoints = player->GetHonorPoints();
+    uint32 playerArenaPoints = player->GetArenaPoints();
+    player->SetHonorPoints(0);
+    player->SetArenaPoints(0);
 
     // This disaster is the result of changing the MAX_ARENA_SLOT from 3 to 4.
     sArenaTeamMgr->RemoveArenaTeam(player->GetArenaTeamId(ARENA_SLOT_1V1));
@@ -366,6 +382,11 @@ bool npc_1v1arena::CreateArenateam(Player* player, Creature* /* me */)
     if (!arenaTeam->Create(player->GetGUID(), ARENA_TEAM_1V1, player->GetName(), 4283124816, 45, 4294242303, 5, 4294705149))
     {
         delete arenaTeam;
+
+        // hackfix: restore points
+        player->SetHonorPoints(playerHonorPoints);
+        player->SetArenaPoints(playerArenaPoints);
+
         return false;
     }
 
@@ -375,6 +396,7 @@ bool npc_1v1arena::CreateArenateam(Player* player, Creature* /* me */)
     ChatHandler(player->GetSession()).SendSysMessage("1v1 Arenateam successfully created!");
 
     // This disaster is the result of changing the MAX_ARENA_SLOT from 3 to 4.
+    // hackfix: restore points
     player->SetHonorPoints(playerHonorPoints);
     player->SetArenaPoints(playerArenaPoints);
 
@@ -418,7 +440,13 @@ public:
     {
         if (at->GetType() == ARENA_TEAM_1V1)
         {
-            points *= sConfigMgr->GetOption<float>("Arena1v1.ArenaPointsMulti", 0.64f);
+            const auto Members = at->GetMembers();
+            uint8 playerLevel = sCharacterCache->GetCharacterLevelByGuid(Members.front().Guid);
+
+            if (playerLevel >= sConfigMgr->GetOption<uint32>("Arena1v1.ArenaPointsMinLevel", 70))
+                points *= sConfigMgr->GetOption<float>("Arena1v1.ArenaPointsMulti", 0.64f);
+            else
+                points *= 0;
         }
     }
 

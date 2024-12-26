@@ -33,6 +33,34 @@ INSERT INTO `zone_difficulty_mythicmode_instance_data` (`MapID`, `SourceEntry`, 
 (544, 17257, 0, 9),    -- Magtheridon, Magtheridon's Lair
 (565, 18831, 0, 9),    -- High King Maulgar, Gruul's Lair
 (565, 19044, 0, 9),    -- Gruul, Gruul's Lair
+-- SSC
+(548, 21216, 0, 10), -- Hydross
+(548, 21217, 0, 10), -- Lurker
+(548, 21215, 0, 10), -- Leotheras
+(548, 21213, 0, 10), -- Morogrim
+(548, 21214, 0, 10), -- Karathress
+(548, 21212, 0, 10), -- Vashj
+-- Hyjal
+(534, 17767, 0, 18), -- Rage Winterchill
+(534, 17808, 0, 18), -- Anetheron
+(534, 17888, 0, 18), -- Kazrogal
+(534, 17842, 0, 18), -- Azgalor
+(534, 17968, 0, 18), -- Archimonde
+-- Black Temple
+(564, 22887, 0, 11), -- Najentus
+(564, 22898, 0, 11), -- Supremus
+(564, 22841, 0, 11), -- Akama
+(564, 22871, 0, 11), -- Teron
+(564, 22947, 0, 11), -- Mother Shahraz
+(564, 22948, 0, 11), -- Gurtogg
+(564, 22917, 0, 11), -- Illidan
+-- ZA
+(568, 23574, 0, 12), -- Akilzon
+(568, 23578, 0, 12), -- Janalai
+(568, 24239, 0, 12), -- Hexlord
+(568, 23577, 0, 12), -- Halazzi
+(568, 23576, 0, 12), -- Narolakk
+(568, 23863, 0, 12), -- Zuljin
 -- TBC 5man Heroics
 (269, 17881, 0, 8),    -- Aeonus, The Black Morass
 (540, 16808, 0, 8),    -- Warchief Kargath Bladefist, Shattered Halls

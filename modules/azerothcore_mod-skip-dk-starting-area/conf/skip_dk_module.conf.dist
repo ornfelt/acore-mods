@@ -42,6 +42,14 @@ GM.Skip.Deathknight.Starter.Enable = 0
 Skip.Deathknight.Start.Level = 58
 
 #
+#    Skip.Deathknight.Start.Trained
+#         Automatically trains skills up to 58, as might be expected by the end of the start zone.
+#         Default: 0 - (Inactive)
+#
+
+Skip.Deathknight.Start.Trained = 1
+
+#
 #    Skip.Deathknight.Optional.Enable
 #    Enables optional to skip when talking to lich king on first creation of dk.
 #    Default: 1 - (Active)

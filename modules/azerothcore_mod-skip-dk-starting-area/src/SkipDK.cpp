@@ -116,6 +116,19 @@ void Azerothcore_skip_deathknight_HandleSkip(Player* player)
         player->GiveLevel(DKL);
     }
 
+    if (sConfigMgr->GetOption<bool>("Skip.Deathknight.Start.Trained", false))
+    {
+        player->addSpell(49998, SPEC_MASK_ALL, true); // Death Strike rank 1
+        player->addSpell(47528, SPEC_MASK_ALL, true); // Mind Freeze
+        player->addSpell(46584, SPEC_MASK_ALL, true); // Raise Dead
+        player->addSpell(45524, SPEC_MASK_ALL, true); // Chains of Ice
+        player->addSpell(48263, SPEC_MASK_ALL, true); // Frost Presence
+        player->addSpell(50842, SPEC_MASK_ALL, true); // Pestilence
+        player->addSpell(53342, SPEC_MASK_ALL, true); // Rune of Spellshattering
+        player->addSpell(48721, SPEC_MASK_ALL, true); // Blood Boil rank 1
+        player->addSpell(54447, SPEC_MASK_ALL, true); // Rune of Spellbreaking
+    }
+
     //Don't need to save all players, just current
     player->SaveToDB(false, false);
 
