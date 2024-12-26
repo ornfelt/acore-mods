@@ -1,4 +1,4 @@
-AzerothCore modules
+# AzerothCore modules
 
 AnchyDev_DungeonRespawn [modules/AnchyDev_DungeonRespawn](modules/AnchyDev_DungeonRespawn)
 
