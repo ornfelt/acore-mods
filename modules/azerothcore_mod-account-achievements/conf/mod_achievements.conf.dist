@@ -11,3 +11,7 @@ Account.Achievements.Enable = 1
 # Announce the module when the player logs in?
 
 Account.Achievements.Announce = 1
+
+# List of achievement IDs to exclude (comma-separated)
+
+Account.Achievements.Excluded = 0

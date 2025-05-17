@@ -1,11 +1,11 @@
 #include "Configuration/Config.h"
+#include "Group.h"
 #include "Player.h"
 #include "ScriptMgr.h"
-#include "Group.h"
-#include <iostream>
-#include <iomanip>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 
 using std::stringstream;
 using std::ifstream;
@@ -18,7 +18,9 @@ public:
     bool loggingEnabled = sConfigMgr->GetOption<bool>("ZoneAreaDetailedLogging.enabled", true);
     int logDumpSize = sConfigMgr->GetOption<int>("ZoneAreaDetailedLogging.dumpSize", 0);
 
-    ZoneAreaTracker() : PlayerScript("ZoneAreaTracker")
+    ZoneAreaTracker() : PlayerScript("ZoneAreaTracker", {
+        PLAYERHOOK_ON_UPDATE_AREA
+    })
     {
         // If the file doesn't exist we will create it and add the appropriate headers
         ifstream ifile("zonearea.log");
@@ -29,7 +31,7 @@ public:
         }
     }
 
-    void OnUpdateArea(Player* player, uint32 oldArea, uint32 newArea) override;
+    void OnPlayerUpdateArea(Player* player, uint32 oldArea, uint32 newArea) override;
 
 private:
     int insertCount = 0;

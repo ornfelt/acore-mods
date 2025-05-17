@@ -16,7 +16,10 @@ enum EventIds
 class dmf_switch_event_script : public GameEventScript
 {
 public:
-    dmf_switch_event_script() : GameEventScript("dmf_switch_event_script") { }
+    dmf_switch_event_script() : GameEventScript("dmf_switch_event_script", {
+        GAMEEVENTHOOK_ON_START,
+        GAMEEVENTHOOK_ON_EVENT_CHECK
+    }) { }
 
     void OnStart(uint16 eventId) override
     {
@@ -64,7 +67,7 @@ public:
                         GameEventData const& eventData = events[activeEvent];
 
                         sGameEventMgr->StopEvent(activeEvent, true);
-                        LOG_INFO("module", "[DMF-Switch]: Stopping {} ({})", eventData.description, activeEvent);
+                        LOG_INFO("module", "[DMF-Switch]: Stopping {} ({})", eventData.Description, activeEvent);
                     }
             }
         }

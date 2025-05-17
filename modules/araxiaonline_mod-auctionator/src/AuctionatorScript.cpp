@@ -71,7 +71,7 @@ class AuctionatorHouseScript : public AuctionHouseScript
         {
             if (oldBidder && !newBidder)
                 oldBidder->GetSession()->SendAuctionBidderNotification(
-                    auction->GetHouseId(),
+                    (uint32)auction->GetHouseId(),
                     auction->Id,
                     ObjectGuid::Create<HighGuid::Player>(gAuctionator->config->characterGuid),
                     newPrice,

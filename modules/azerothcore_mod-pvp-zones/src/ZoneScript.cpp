@@ -9,6 +9,7 @@
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "WorldSessionMgr.h"
 #include <algorithm>
 #include <iterator>
 #include <map>
@@ -51,7 +52,9 @@ Config config;
 class ZoneConfig : public WorldScript
 {
 public:
-    ZoneConfig() : WorldScript("pvp_zones_Config") {}
+    ZoneConfig() : WorldScript("pvp_zones_Config", {
+        WORLDHOOK_ON_STARTUP
+    }) {}
 
     void OnStartup() override
     {
@@ -67,13 +70,18 @@ public:
 };
 
 /* TODO: change class name */
-class ZoneLogicScript : public PlayerScript, WorldScript
+class ZoneLogicScript : public PlayerScript
 {
 public:
-    ZoneLogicScript() : PlayerScript("pvp_zones_PlayerScript"), WorldScript("pvp_zones_WorldScript") {}
+    ZoneLogicScript() : PlayerScript("pvp_zones_PlayerScript", {
+        PLAYERHOOK_ON_UPDATE_AREA,
+        PLAYERHOOK_ON_PLAYER_PVP_FLAG_CHANGE,
+        PLAYERHOOK_ON_UPDATE_ZONE,
+        PLAYERHOOK_ON_PVP_KILL
+    }) {}
 
     /* adding/removing players that are currently in the area */
-    void OnUpdateArea(Player* player, uint32 /* oldArea*/, uint32 newArea) override
+    void OnPlayerUpdateArea(Player* player, uint32 /* oldArea*/, uint32 newArea) override
     {
         if (config.current_area == newArea)
         {
@@ -81,9 +89,7 @@ public:
             config.area_players.push_back(player);
         }
         else
-        {
             config.area_players.erase(std::remove(config.area_players.begin(), config.area_players.end(), player), config.area_players.end());
-        }
     }
 
     static bool isPlayerInZone(Player* player)
@@ -94,12 +100,10 @@ public:
     void OnPlayerPVPFlagChange(Player* player, bool state) override
     {
         if (isPlayerInZone(player) && !state)
-        {
             player->SetPvP(true);
-        }
     }
 
-    void OnUpdateZone(Player* player, uint32 newZone, uint32 /* new area */) override
+    void OnPlayerUpdateZone(Player* player, uint32 newZone, uint32 /* new area */) override
     {
         /* un/flagging player as pvp.
            create some kind of pvp hook when pvp changes inside the zone
@@ -108,9 +112,7 @@ public:
         if (config.current_zone == newZone)
         {
             if (isPlayerInZone(player))
-            {
                 return;
-            }
             ChatHandler((player->GetSession())).SendSysMessage("You have entered the Oceanic War cffFFFFFFblood zone!");
             config.zone_players.push_back(player);
             player->UpdatePvP(true, true);
@@ -128,22 +130,16 @@ public:
 
         /* this should never happen */
         if (config.points.empty())
-        {
             return;
-        }
 
         for (auto& player : config.points)
-        {
             handler->PSendSysMessage("%s: %u", player.first->GetName().c_str(), player.second);
-        }
     }
 
     static void PostAnnouncement(ChatHandler* handler)
     {
         if (!config.active)
-        {
             return;
-        }
         if (config.last_announcement + config.announcement_delay < GameTime::GetGameTime().count())
         {
             handler->PSendSysMessage("[pvp_zones] Is currently active in: %s - %s", config.current_zone_name.c_str(), config.current_area_name.c_str());
@@ -176,9 +172,7 @@ public:
             config.current_area_name = entry->area_name[handler->GetSessionDbcLocale()];
 
             if (AreaTableEntry const* z_entry = sAreaTableStore.LookupEntry(config.current_zone))
-            {
                 config.current_zone_name = z_entry->area_name[handler->GetSessionDbcLocale()];
-            }
         }
 
         handler->SendGlobalSysMessage(("[pvp_zones] A new zone has been declared: " + config.current_zone_name + " - " + config.current_area_name).c_str());
@@ -195,9 +189,7 @@ public:
             }
 
             if (player.second->GetAreaId() == config.current_area)
-            {
                 config.area_players.push_back(player.second);
-            }
         }
     }
 
@@ -212,26 +204,19 @@ public:
         config.zone_players.clear();
     }
 
-    void OnPVPKill(Player* winner /*killer*/, Player* loser /*killed*/) override
+    void OnPlayerPVPKill(Player* winner /*killer*/, Player* loser /*killed*/) override
     {
-
         /* point calculation / checks */
         if (winner->GetAreaId() == config.current_area)
-        {
             config.kill_points *= 2;
-        }
         if (winner->GetZoneId() == config.current_zone)
         {
             /* populate config.points */
             if (config.points.find(winner) == config.points.end())
-            {
                 config.points.insert(std::make_pair(winner, config.kill_points));
-            }
 
             if (config.points.find(loser) == config.points.end())
-            {
                 config.points.insert(std::make_pair(loser, 0));
-            }
 
             config.kill_goal--;
 
@@ -240,9 +225,7 @@ public:
             config.points.find(winner)->second += config.kill_points;
 
             if (config.points.find(loser)->second > 0)
-            {
                 config.points.find(loser)->second -= config.kill_points;
-            }
 
             if (config.kill_goal <= 0)
             {
@@ -254,9 +237,7 @@ public:
             ChatHandler(loser->GetSession()).SendSysMessage(("[pvp_zones] You have lost " + std::to_string(config.kill_points) + " PvP point(s)").c_str());
 
             if (config.kill_goal % /* TODO: put this higher, temporary test value */ 1 == 0)
-            {
                 PostLeaderBoard(&winner_handle);
-            }
         }
     }
 };
@@ -320,20 +301,20 @@ public:
 class ZoneWorld : public WorldScript
 {
 public:
-    ZoneWorld() : WorldScript("pvp_zones_World") {}
+    ZoneWorld() : WorldScript("pvp_zones_World", {
+        WORLDHOOK_ON_UPDATE
+    }) {}
 
     void OnUpdate(uint32 /* p_time */) override
     {
         if (!config.enabled)
-        {
             return;
-        }
 
-        SessionMap   m_sessions = sWorld->GetAllSessions();
-        Player*      player;
+        WorldSessionMgr::SessionMap m_sessions = sWorldSessionMgr->GetAllSessions();
+        Player* player = nullptr;
         ChatHandler* handle;
 
-        for (SessionMap::iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+        for (WorldSessionMgr::SessionMap::iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
         {
             if (!itr->second || !itr->second->GetPlayer() || !itr->second->GetPlayer()->IsInWorld())
                 continue;
@@ -342,23 +323,17 @@ public:
         }
 
         if (!player)
-        {
             return;
-        }
 
         handle = new ChatHandler(player->GetSession());
 
         /* create event every x seconds based on config */
         if (config.last_event + config.event_delay < GameTime::GetGameTime().count())
-        {
             ZoneLogicScript::CreateEvent(handle);
-        }
 
         /* ends event if event is already running x seconds */
         if (config.last_event + config.event_lasts < GameTime::GetGameTime().count())
-        {
             ZoneLogicScript::EndEvent(handle);
-        }
 
         /* announcement stuff */
         if (config.last_announcement + config.announcement_delay <= GameTime::GetGameTime().count())

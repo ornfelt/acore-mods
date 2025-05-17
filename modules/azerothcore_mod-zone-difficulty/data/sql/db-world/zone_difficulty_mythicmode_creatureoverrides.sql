@@ -61,11 +61,11 @@ INSERT INTO `zone_difficulty_mythicmode_creatureoverrides` (`CreatureEntry`, `HP
 (24850, 3.5, 2.3, 1, 'Kalecgos 3.5x mythic 2.3x normal hp'),
 (24891, 3.5, 2.3, 1, 'Kalec 3.5x mythic 2.3x normal hp'),
 (24892, 3.5, 2.3, 1, 'Sarthrovarr 3.5x mythic 2.3x normal hp'),
-(24882, 3.5, 2.3, 1, 'Brutallus 3.5x mythic 2.3x normal hp'),
-(25038, 3.5, 2.3, 1, 'Felmyst 3.5x mythic 2.3x normal hp'),
+(24882, 2.3, 1.8, 1, 'Brutallus 2.3x mythic 1.8x normal hp'),
+(25038, 2.3, 1.8, 1, 'Felmyst 2.3x mythic 1.8x normal hp'),
 (25166, 3.5, 2.5, 1, 'Alythess 3.5x mythic 2.5x normal hp'),
 (25165, 3.5, 2.5, 1, 'Sacrolash 3.5x mythic 2.5x normal hp'),
 (25741, 3.5, 2.5, 1, 'Muru 3.5x mythic 2.5x normal hp'),
 (25840, 3.5, 2.5, 1, 'Entropius 3.5x mythic 2.5x normal hp'),
-(25315, 3.5, 2.5, 1, 'Kiljaeden 3.5x mythic 2.5x normal hp');
+(25315, 3, 2.1, 1, 'Kiljaeden 3x mythic 2.1x normal hp');
 

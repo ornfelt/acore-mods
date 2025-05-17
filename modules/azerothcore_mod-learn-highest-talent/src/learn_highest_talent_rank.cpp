@@ -100,10 +100,12 @@ enum Druid_Talents
 class learn_highest_talent_rank : public PlayerScript
 {
 public:
-    learn_highest_talent_rank() : PlayerScript("learn_highest_talent_rank") {}
+    learn_highest_talent_rank() : PlayerScript("learn_highest_talent_rank", {
+        PLAYERHOOK_ON_FREE_TALENT_POINTS_CHANGED
+    }) {}
 
     // Called when a player's free talent points change (right before the change is applied)
-    void OnFreeTalentPointsChanged(Player* player, uint32 /* points */)
+    void OnPlayerFreeTalentPointsChanged(Player* player, uint32 /* points */) override
     {
         uint32 Talent_First_Rank[] =
         {

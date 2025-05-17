@@ -9,15 +9,15 @@
 
 struct ZoneDifficultyNerfData
 {
-    float HealingNerfPct;
-    float AbsorbNerfPct;
-    float SpellDamageBuffPct;
-    float MeleeDamageBuffPct;
-    int8 Enabled;
-    float HealingNerfPctHard;
-    float AbsorbNerfPctHard;
-    float SpellDamageBuffPctHard;
-    float MeleeDamageBuffPctHard;
+    float HealingNerfPct = 1.0f;
+    float AbsorbNerfPct = 1.0f;
+    float SpellDamageBuffPct = 1.0f;
+    float MeleeDamageBuffPct = 1.0f;
+    int8 Enabled = 1;
+    float HealingNerfPctHard = 1.0f;
+    float AbsorbNerfPctHard = 1.0f;
+    float SpellDamageBuffPctHard = 1.0f;
+    float MeleeDamageBuffPctHard = 1.0f;
 };
 
 struct ZoneDifficulySpellOverrideData
@@ -66,8 +66,8 @@ struct VendorSelectionData
 
 struct CreatureOverrideData
 {
-    float NormalOverride;
-    float MythicOverride;
+    float NormalOverride = 1.0f;
+    float MythicOverride = 1.0f;
 };
 
 int32 const DUEL_INDEX = 0x7FFFFFFF;
@@ -134,6 +134,7 @@ enum ZoneDifficultySettings
     TYPE_RAID_T9      = 16,
     TYPE_RAID_T10     = 17,
     TYPE_RAID_HYJAL   = 18,
+    TYPE_RAID_SWP     = 19,
 
     TYPE_MAX_TIERS,
 
@@ -141,7 +142,8 @@ enum ZoneDifficultySettings
     SETTING_BLACK_TEMPLE = 0,
     SETTING_ZULAMAN      = 1,
     SETTING_SSC          = 2,
-    SETTING_HYJAL        = 3
+    SETTING_HYJAL        = 3,
+    SETTING_SWP          = 4
 };
 
 enum Misc
@@ -150,6 +152,7 @@ enum Misc
     NPC_LADY_VASHJ        = 21212,
     NPC_ARCHIMONDE        = 17968,
     NPC_ZULJIN            = 23863,
+    NPC_KILJAEDEN         = 25315,
     NPC_REWARD_CHROMIE    = 1128002,
 };
 
@@ -174,7 +177,7 @@ public:
     bool HasMythicmode(int8 mode) { return (mode & MODE_HARD) == MODE_HARD; }
     bool HasCompletedFullTier(uint32 category, uint32 playerGUID);
     bool OverrideModeMatches(uint32 instanceId, uint32 spellId, uint32 mapId);
-    [[nodiscord]] bool CheckCompletionStatus(Creature* creature, Player* player, uint32 category) const;
+    [[nodiscard]] bool CheckCompletionStatus(Creature* creature, Player* player, uint32 category) const;
     [[nodiscard]] bool IsValidNerfTarget(Unit* target);
     [[nodiscard]] bool VectorContainsUint32(std::vector<uint32> vec, uint32 element);
     [[nodiscard]] bool IsMythicmodeMap(uint32 mapid);
@@ -192,6 +195,7 @@ public:
     bool MythicmodeInNormalDungeons{ false };
     bool UseVendorInterface{ false };
     bool IsBlackTempleDone{ false };
+    bool IsSunwellPlateauDone{ false };
     std::vector<uint32> DailyHeroicQuests;
     std::map<uint32, uint32> HeroicTBCQuestMapList;
     std::map<uint32, uint8> EncounterCounter;

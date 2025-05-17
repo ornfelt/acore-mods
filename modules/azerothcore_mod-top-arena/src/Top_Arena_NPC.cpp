@@ -1,14 +1,13 @@
-#include "ScriptMgr.h"
-#include <cstring>
-#include <string.h>
-#include "ObjectMgr.h"
-#include "ScriptMgr.h"
 #include "ArenaTeam.h"
 #include "ArenaTeamMgr.h"
-#include "World.h"
-#include "Player.h"
 #include "Chat.h"
+#include "ObjectMgr.h"
+#include "Player.h"
 #include "ScriptedGossip.h"
+#include "ScriptMgr.h"
+#include "World.h"
+#include <cstring>
+#include <string.h>
 
 enum ArenaRankActionIds
 {
@@ -174,7 +173,7 @@ class TopArenaNPC : public CreatureScript
     public:
         TopArenaNPC() : CreatureScript("arenatop") {}
 
-        bool OnGossipHello(Player* player, Creature* creature)
+        bool OnGossipHello(Player* player, Creature* creature) override
         {
             AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "Top PvP 2v2.", GOSSIP_SENDER_MAIN, ARENA_2V2_LADDER);
             AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "Top PvP 3v3.", GOSSIP_SENDER_MAIN, ARENA_3V3_LADDER);
@@ -185,7 +184,7 @@ class TopArenaNPC : public CreatureScript
             return true;
         }
         
-        bool OnGossipSelect(Player* player, Creature* creature, uint32 /*uiSender*/, uint32 uiAction)
+        bool OnGossipSelect(Player* player, Creature* creature, uint32 /*uiSender*/, uint32 uiAction) override
         {
             player->PlayerTalkClass->ClearMenus();
 
@@ -247,7 +246,7 @@ class TopArenaNPC : public CreatureScript
                         // no team found
                         if(!result)
                         {
-                            player->GetSession()->SendNotification("Arena team not found...");
+                            ChatHandler(player->GetSession()).SendNotification("Arena team not found...");
                             player->PlayerTalkClass->SendCloseGossip();
                             return true;
                         }
@@ -284,9 +283,7 @@ class TopArenaNPC : public CreatureScript
                         QueryResult members = CharacterDatabase.Query( "SELECT  a.`guid`, a.`personalRating`, a.`weekWins`, a.`weekGames` - a.`weekWins`, a.`seasonWins`, a.`seasonGames` - a.`seasonWins`, c.`name`, c.`race`, c.`class`, c.`level` FROM `arena_team_member` a LEFT JOIN `characters` c ON c.`guid` = a.`guid` WHERE `arenaTeamId`={} ORDER BY a.`guid`={} DESC, a.`seasonGames` DESC, c.`name` ASC", teamId, captainGuid);
 
                         if(!members)
-                        {
                             AddGossipItemFor(player, GOSSIP_ICON_CHAT, "No team members found...?", GOSSIP_SENDER_MAIN, parentOption);
-                        }
                         else
                         {
                             uint32 memberPos = 1;

@@ -5,20 +5,20 @@
 #include "Config.h"
 #include "DatabaseEnv.h"
 #include "Log.h"
-#include "ScriptMgr.h"
 #include "StringFormat.h"
+#include "ScriptMgr.h"
 
 class IpTracker : public AccountScript
 {
 public:
-    IpTracker() : AccountScript("IpTracker") { }
+    IpTracker() : AccountScript("IpTracker", {
+        ACCOUNTHOOK_ON_LAST_IP_UPDATE
+    }) { }
 
     void OnLastIpUpdate(uint32 accountId, std::string ip) override
     {
         if (!sConfigMgr->GetOption<bool>("IpTracker.Enabled", false))
-        {
             return;
-        }
 
         std::string query = Acore::StringFormat("INSERT INTO `account_ip` (`account`, `ip`, `first_time`, `last_time`) VALUES ({}, '{}', NOW(), NOW()) ON DUPLICATE KEY UPDATE `last_time` = NOW()", accountId, ip);
         LoginDatabase.Execute(query.c_str());
@@ -28,16 +28,16 @@ public:
 class IpTrackerWorldScript : public WorldScript
 {
 public:
-    IpTrackerWorldScript() : WorldScript("IpTracker") { }
+    IpTrackerWorldScript() : WorldScript("IpTracker", {
+        WORLDHOOK_ON_STARTUP
+    }) { }
 
     void OnStartup() override
     {
         const auto cleanOlderThanDays = sConfigMgr->GetOption<int32>("IpTracker.CleanOlderThanDays", 0);
 
         if (!sConfigMgr->GetOption<bool>("IpTracker.Enabled", false) || !cleanOlderThanDays)
-        {
             return;
-        }
 
         LoginDatabase.Query("DELETE FROM `account_ip` WHERE `last_time` < (DATE_SUB(NOW(), INTERVAL {} DAY))", cleanOlderThanDays);
 

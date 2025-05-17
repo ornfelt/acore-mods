@@ -54,11 +54,12 @@
 */
 
 
-#include "Player.h"
-#include "Config.h"
 #include "Chat.h"
-#include "ScriptMgr.h"
+#include "Config.h"
 #include "GuildMgr.h"
+#include "Player.h"
+#include "ScriptMgr.h"
+#include "WorldSessionMgr.h"
 
 bool LoginEnable = 1;
 bool LoginAnnounceModule = 1;
@@ -82,11 +83,14 @@ bool LoginReputation = 1;
 class LoginConfig : public WorldScript
 {
 public:
-    LoginConfig() : WorldScript("LoginConfig") { }
+    LoginConfig() : WorldScript("LoginConfig", {
+        WORLDHOOK_ON_BEFORE_CONFIG_LOAD
+    }) { }
 
     void OnBeforeConfigLoad(bool reload) override
     {
-        if (!reload) {
+        if (!reload)
+        {
             // Load Configuration Settings
             SetInitialWorldSettings();
         }
@@ -121,18 +125,16 @@ class LoginAnnounce : public PlayerScript
 
 public:
 
-    LoginAnnounce() : PlayerScript("LoginAnnounce") {}
+    LoginAnnounce() : PlayerScript("LoginAnnounce", {
+        PLAYERHOOK_ON_LOGIN
+    }) {}
 
-    void OnLogin(Player* player)
+    void OnPlayerLogin(Player* player) override
     {
         // Announce Module
         if (LoginEnable)
-        {
             if (LoginAnnounceModule)
-            {
                 ChatHandler(player->GetSession()).SendSysMessage("");
-            }
-        }
     }
 };
 
@@ -140,9 +142,13 @@ class CustomLogin : public PlayerScript
 {
 
 public:
-    CustomLogin() : PlayerScript("CustomLogin") { }
+    CustomLogin() : PlayerScript("CustomLogin", {
+        PLAYERHOOK_ON_FIRST_LOGIN,
+        PLAYERHOOK_ON_LOGIN,
+        PLAYERHOOK_ON_LOGOUT
+    }) { }
 
-    void OnFirstLogin(Player* player)
+    void OnPlayerFirstLogin(Player* player) override
     {
         // If enabled..
         if (LoginEnable)
@@ -554,7 +560,7 @@ public:
         }
     }
 
-    void OnLogin(Player* player)
+    void OnPlayerLogin(Player* player) override
     {
         // If enabled..
         if (LoginEnable)
@@ -567,19 +573,19 @@ public:
                 {
                     std::ostringstream ss;
                     ss << "|cffFFFFFF[|cff2897FF Alliance |cffFFFFFF]:|cff4CFF00 " << player->GetName() << "|cffFFFFFF has come online.";
-                    sWorld->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
+                    sWorldSessionMgr->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
                 }
                 else
                 {
                     std::ostringstream ss;
                     ss << "|cffFFFFFF[|cffFF0000 Horde |cffFFFFFF]:|cff4CFF00 " << player->GetName() << "|cffFFFFFF has come online.";
-                    sWorld->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
+                    sWorldSessionMgr->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
                 }
             }
         }
     }
 
-    void OnLogout(Player *player)
+    void OnPlayerLogout(Player *player) override
     {
         if (LoginEnable)
         {
@@ -591,13 +597,13 @@ public:
                 {
                     std::ostringstream ss;
                     ss << "|cffFFFFFF[|cff2897FF Alliance |cffFFFFFF]|cff4CFF00 " << player->GetName() << "|cffFFFFFF has left the game.";
-                    sWorld->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
+                    sWorldSessionMgr->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
                 }
                 else
                 {
                     std::ostringstream ss;
                     ss << "|cffFFFFFF[|cffFF0000 Horde |cffFFFFFF]|cff4CFF00 " << player->GetName() << "|cffFFFFFF has left the game.";
-                    sWorld->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
+                    sWorldSessionMgr->SendServerMessage(SERVER_MSG_STRING, ss.str().c_str());
                 }
             }
         }

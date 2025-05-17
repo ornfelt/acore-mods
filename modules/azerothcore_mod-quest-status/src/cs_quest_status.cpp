@@ -1,6 +1,6 @@
 #include "cs_quest_status.h"
 
-void AnnouncePlayer::OnLogin(Player* player)
+void AnnouncePlayer::OnPlayerLogin(Player* player)
 {
     if (sConfigMgr->GetOption<bool>("AnnouncePlayer.enable", true))
     {

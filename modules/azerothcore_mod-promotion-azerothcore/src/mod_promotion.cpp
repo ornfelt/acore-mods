@@ -2,18 +2,18 @@
  * This plugin can be used for common player customizations
 */
 
-#include "ScriptMgr.h"
-#include "Player.h"
-#include "Config.h"
 #include "Chat.h"
+#include "Config.h"
+#include "DatabaseEnv.h"
 #include "GossipDef.h"
+#include "Language.h"
+#include "mod_promotion.h"
+#include "Player.h"
 #include "ScriptedCreature.h"
 #include "ScriptedGossip.h"
-#include "Language.h"
-#include "DatabaseEnv.h"
-#include "WorldSession.h"
-#include "mod_promotion.h"
+#include "ScriptMgr.h"
 #include "World.h"
+#include "WorldSession.h"
 
 static bool promotionEnable, mountEnable, bagEnable, equippedbags;
 static int promotionCount, moneyRewardConst, mountPromotion, bagReward;
@@ -22,18 +22,16 @@ static int classConfArmor, LevelForPromotion;
 class announce_module : public PlayerScript
 {
 public:
-    announce_module() : PlayerScript("announce_module") { }
+    announce_module() : PlayerScript("announce_module", {
+        PLAYERHOOK_ON_LOGIN
+    }) { }
 
-    void OnLogin(Player* player) override
+    void OnPlayerLogin(Player* player) override
     {
         if (sConfigMgr->GetOption<bool>("announce_module.enableHelloWorld", true))
-        {
             ChatHandler(player->GetSession()).SendSysMessage("Hello World from Promotion-Module! - By Asmadeuxx");
-        }
         else
-        {
             ChatHandler(player->GetSession()).SendSysMessage("Hello World from Promotion-Module! - By Asmadeuxx");
-        }
     }
 };
 
@@ -45,16 +43,12 @@ public:
     bool OnGossipHello(Player* player, Creature* creature) override
     {
         if (player->getClass() == CLASS_DEATH_KNIGHT)
-        {
             return true;
-        }
 
-        if (player->getLevel() != 1)
+        if (player->GetLevel() != 1)
         {
             if (player && creature)
-            {
                 SendGossipMenuFor(player, 68, creature);
-            }
             return true;
         }
 
@@ -506,9 +500,7 @@ public:
             creature->Whisper("You Got Your Promotion!", LANG_UNIVERSAL, player);
 
             if (mountEnable)
-            {
                 player->learnSpell(sConfigMgr->GetOption<uint32>("mountPromotion", 42777)); //Swift Spectral Tiger
-            }
         
             //Bags
             if (bagEnable)
@@ -523,9 +515,7 @@ public:
                         player->EquipNewItem(slot, (sConfigMgr->GetOption<uint32>("bagReward.Id", 14156)), true);
                 }
                 else
-                {
                     player->AddItem((sConfigMgr->GetOption<uint32>("bagReward.Id", 14156)), 4);
-                }
             }
 
             switch (action)
@@ -577,9 +567,7 @@ public:
             }
         }
         else
-        {
             SendGossipMenuFor(player, 80000, creature);
-        }
 
         return true;
     }
@@ -588,7 +576,9 @@ public:
 class mod_promotion_conf : public WorldScript
 {
 public:
-    mod_promotion_conf() : WorldScript("mod_promotion.conf") { }
+    mod_promotion_conf() : WorldScript("mod_promotion.conf", {
+        WORLDHOOK_ON_BEFORE_CONFIG_LOAD
+    }) { }
 
     void OnBeforeConfigLoad(bool reload) override
     {

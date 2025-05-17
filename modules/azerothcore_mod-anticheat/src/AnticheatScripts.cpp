@@ -30,6 +30,7 @@
 #include "Player.h"
 #include "Timer.h"
 #include "GameTime.h"
+#include "WorldSessionMgr.h"
 
 Seconds resetTime = 0s;
 Seconds lastIterationPlayer = GameTime::GetUptime() + 30s; //TODO: change 30 secs static to a configurable option
@@ -37,14 +38,14 @@ Seconds lastIterationPlayer = GameTime::GetUptime() + 30s; //TODO: change 30 sec
 class AnticheatPlayerScript : public PlayerScript
 {
 public:
-    AnticheatPlayerScript() : PlayerScript("AnticheatPlayerScript") { }
+    AnticheatPlayerScript() : PlayerScript("AnticheatPlayerScript", { PLAYERHOOK_ON_LOGOUT, PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_UPDATE }) { }
 
-    void OnLogout(Player* player) override
+    void OnPlayerLogout(Player* player) override
     {
         sAnticheatMgr->HandlePlayerLogout(player);
     }
 
-    void OnLogin(Player* player) override
+    void OnPlayerLogin(Player* player) override
     {
         sAnticheatMgr->HandlePlayerLogin(player);
 
@@ -52,7 +53,7 @@ public:
             ChatHandler(player->GetSession()).PSendSysMessage("This server is running an Anticheat Module.");
     }
 
-    void OnUpdate(Player* player, uint32 diff) override
+    void OnPlayerUpdate(Player* player, uint32 diff) override
     {
         if (sConfigMgr->GetOption<bool>("Anticheat.OpAckOrderHack", true) && sConfigMgr->GetOption<bool>("Anticheat.Enabled", true))
             sAnticheatMgr->AckUpdate(player, diff);
@@ -62,7 +63,7 @@ public:
 class AnticheatWorldScript : public WorldScript
 {
 public:
-    AnticheatWorldScript() : WorldScript("AnticheatWorldScript") { }
+    AnticheatWorldScript() : WorldScript("AnticheatWorldScript", { WORLDHOOK_ON_UPDATE, WORLDHOOK_ON_AFTER_CONFIG_LOAD }) { }
 
     void OnUpdate(uint32 /* diff */) override // unusued parameter
     {
@@ -78,9 +79,10 @@ public:
         {
             lastIterationPlayer = GameTime::GetUptime() + Seconds(sConfigMgr->GetOption<uint32>("Anticheat.SaveReportsTime", 60));
 
-            LOG_INFO("module", "Saving reports for {} players.", sWorld->GetPlayerCount());
+            LOG_INFO("module", "Saving reports for {} players.", sWorldSessionMgr->GetPlayerCount());
 
-            for (SessionMap::const_iterator itr = sWorld->GetAllSessions().begin(); itr != sWorld->GetAllSessions().end(); ++itr)
+            WorldSessionMgr::SessionMap const& sessionMap = sWorldSessionMgr->GetAllSessions();
+            for (WorldSessionMgr::SessionMap::const_iterator itr = sessionMap.begin(); itr != sessionMap.end(); ++itr)
                 if (Player* plr = itr->second->GetPlayer())
                     sAnticheatMgr->SavePlayerData(plr);
         }
@@ -100,7 +102,7 @@ public:
 class AnticheatMovementHandlerScript : public MovementHandlerScript
 {
 public:
-    AnticheatMovementHandlerScript() : MovementHandlerScript("AnticheatMovementHandlerScript") { }
+    AnticheatMovementHandlerScript() : MovementHandlerScript("AnticheatMovementHandlerScript", { MOVEMENTHOOK_ON_PLAYER_MOVE }) { }
 
     void OnPlayerMove(Player* player, MovementInfo mi, uint32 opcode) override
     {

@@ -1,57 +1,50 @@
 #include <string>
 
-#include "Chat.h"
-
 #include "ABConfig.h"
 #include "ABCreatureInfo.h"
 #include "ABMapInfo.h"
 #include "ABPlayerScript.h"
 #include "ABUtils.h"
+
+#include "Chat.h"
 #include "Message.h"
 
-void AutoBalance_PlayerScript::OnLogin(Player* Player)
+void AutoBalance_PlayerScript::OnPlayerLogin(Player* Player)
 {
-    if (EnableGlobal && Announcement) {
+    if (EnableGlobal && Announcement)
         ChatHandler(Player->GetSession()).SendSysMessage("This server is running the |cff4CFF00AutoBalance |rmodule.");
-    }
 }
 
-void AutoBalance_PlayerScript::OnLevelChanged(Player* player, uint8 oldlevel)
+void AutoBalance_PlayerScript::OnPlayerLevelChanged(Player* player, uint8 oldlevel)
 {
     LOG_DEBUG("module.AutoBalance", "AutoBalance:: ------------------------------------------------");
 
     LOG_DEBUG("module.AutoBalance", "AutoBalance_PlayerScript::OnLevelChanged: {} has leveled ({}->{})", player->GetName(), oldlevel, player->GetLevel());
     if (!player || player->IsGameMaster())
-    {
         return;
-    }
 
     Map* map = player->GetMap();
 
     if (!map || !map->IsDungeon())
-    {
         return;
-    }
 
     // update the map's player stats
     UpdateMapPlayerStats(map);
 
     // schedule all creatures for an update
-    AutoBalanceMapInfo* mapABInfo = map->CustomData.GetDefault<AutoBalanceMapInfo>("AutoBalanceMapInfo");
+    AutoBalanceMapInfo* mapABInfo = GetMapInfo(map);
     mapABInfo->mapConfigTime = GetCurrentConfigTime();
 }
 
-void AutoBalance_PlayerScript::OnGiveXP(Player* player, uint32& amount, Unit* victim, uint8 /*xpSource*/)
+void AutoBalance_PlayerScript::OnPlayerGiveXP(Player* player, uint32& amount, Unit* victim, uint8 /*xpSource*/)
 {
     Map* map = player->GetMap();
 
     // If this isn't a dungeon, make no changes
     if (!map->IsDungeon() || !map->GetInstanceId() || !victim)
-    {
         return;
-    }
 
-    AutoBalanceMapInfo* mapABInfo = map->CustomData.GetDefault<AutoBalanceMapInfo>("AutoBalanceMapInfo");
+    AutoBalanceMapInfo* mapABInfo = GetMapInfo(map);
 
     if (victim && RewardScalingXP && mapABInfo->enabled)
     {
@@ -80,7 +73,7 @@ void AutoBalance_PlayerScript::OnGiveXP(Player* player, uint32& amount, Unit* vi
     }
 }
 
-void AutoBalance_PlayerScript::OnBeforeLootMoney(Player* player, Loot* loot)
+void AutoBalance_PlayerScript::OnPlayerBeforeLootMoney(Player* player, Loot* loot)
 {
     Map* map = player->GetMap();
 
@@ -88,7 +81,7 @@ void AutoBalance_PlayerScript::OnBeforeLootMoney(Player* player, Loot* loot)
     if (!map->IsDungeon())
         return;
 
-    AutoBalanceMapInfo* mapABInfo = map->CustomData.GetDefault<AutoBalanceMapInfo>("AutoBalanceMapInfo");
+    AutoBalanceMapInfo* mapABInfo = GetMapInfo(map);
     ObjectGuid sourceGuid = loot->sourceWorldObjectGUID;
 
     if (mapABInfo->enabled && RewardScalingMoney)
@@ -133,27 +126,21 @@ void AutoBalance_PlayerScript::OnPlayerEnterCombat(Player* player, Unit* /*enemy
 {
     // if the player or their map is gone, return
     if (!player || !player->GetMap())
-    {
         return;
-    }
 
     Map* map = player->GetMap();
 
     // If this isn't a dungeon, no work to do
     if (!map || !map->IsDungeon())
-    {
         return;
-    }
 
     LOG_DEBUG("module.AutoBalance_CombatLocking", "AutoBalance_PlayerScript::OnPlayerEnterCombat: {} enters combat.", player->GetName());
 
-    AutoBalanceMapInfo* mapABInfo = map->CustomData.GetDefault<AutoBalanceMapInfo>("AutoBalanceMapInfo");
+    AutoBalanceMapInfo* mapABInfo = GetMapInfo(map);
 
     // if this map isn't enabled, no work to do
     if (!mapABInfo->enabled)
-    {
         return;
-    }
 
     // lock the current map
     if (!mapABInfo->combatLocked)
@@ -175,30 +162,24 @@ void AutoBalance_PlayerScript::OnPlayerLeaveCombat(Player* player)
 {
     // if the player or their map is gone, return
     if (!player || !player->GetMap())
-    {
         return;
-    }
 
     Map* map = player->GetMap();
 
     // If this isn't a dungeon, no work to do
     if (!map || !map->IsDungeon())
-    {
         return;
-    }
 
     // this hook can get called even if the player isn't in combat
     // I believe this happens whenever AC attempts to remove combat, but it doesn't check to see if the player is in combat first
     // unfortunately, `player->IsInCombat()` doesn't work here
     LOG_DEBUG("module.AutoBalance_CombatLocking", "AutoBalance_PlayerScript::OnPlayerLeaveCombat: {} leaves (or wasn't in) combat.", player->GetName());
 
-    AutoBalanceMapInfo* mapABInfo = map->CustomData.GetDefault<AutoBalanceMapInfo>("AutoBalanceMapInfo");
+    AutoBalanceMapInfo* mapABInfo = GetMapInfo(map);
 
     // if this map isn't enabled, no work to do
     if (!mapABInfo->enabled)
-    {
         return;
-    }
 
     // check to see if any of the other players are in combat
     bool anyPlayersInCombat = false;
@@ -240,9 +221,7 @@ void AutoBalance_PlayerScript::OnPlayerLeaveCombat(Player* player)
             for (auto player : mapABInfo->allMapPlayers)
             {
                 if (player && player->GetSession())
-                {
                     ChatHandler(player->GetSession()).PSendSysMessage(ABGetLocaleText(locale, "leaving_instance_combat_change").c_str());
-                }
             }
         }
 

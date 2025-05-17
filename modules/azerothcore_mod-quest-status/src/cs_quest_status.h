@@ -1,18 +1,20 @@
 #include "AccountMgr.h"
 #include "Chat.h"
-#include "Player.h"
-#include "ScriptMgr.h"
 #include "Config.h"
 #include "Language.h"
+#include "Player.h"
+#include "ScriptMgr.h"
 
 using namespace Acore::ChatCommands;
 
 class AnnouncePlayer : public PlayerScript
 {
 public:
-    AnnouncePlayer() : PlayerScript("AnnouncePlayer") {}
+    AnnouncePlayer() : PlayerScript("AnnouncePlayer", {
+        PLAYERHOOK_ON_LOGIN
+    }) {}
 
-    void OnLogin(Player* player) override;
+    void OnPlayerLogin(Player* player) override;
 };
 
 class QuestStatusCommand : public CommandScript

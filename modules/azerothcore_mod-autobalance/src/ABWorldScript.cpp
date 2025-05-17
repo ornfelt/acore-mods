@@ -1,9 +1,10 @@
-#include "Configuration/Config.h"
-#include "Log.h"
+#include "ABWorldScript.h"
 
 #include "ABConfig.h"
 #include "ABUtils.h"
-#include "ABWorldScript.h"
+
+#include "Configuration/Config.h"
+#include "Log.h"
 
 void AutoBalance_WorldScript::OnBeforeConfigLoad(bool /*reload*/)
 {
@@ -44,6 +45,8 @@ void AutoBalance_WorldScript::SetInitialWorldSettings()
 
     minPlayersNormal = sConfigMgr->GetOption<int>("AutoBalance.MinPlayers", 1);
     minPlayersHeroic = sConfigMgr->GetOption<int>("AutoBalance.MinPlayers.Heroic", 1);
+    minPlayersRaid = sConfigMgr->GetOption<int>("AutoBalance.MinPlayers.Raid", minPlayersNormal);
+    minPlayersRaidHeroic = sConfigMgr->GetOption<int>("AutoBalance.MinPlayers.RaidHeroic", minPlayersHeroic);
 
     if (sConfigMgr->GetOption<float>("AutoBalance.PerDungeonPlayerCounts", false, false))
         LOG_WARN("server.loading", "mod-autobalance: deprecated value `AutoBalance.PerDungeonPlayerCounts` defined in `AutoBalance.conf`. This variable will be removed in a future release. Please see `AutoBalance.conf.dist` for more details.");
@@ -430,13 +433,9 @@ void AutoBalance_WorldScript::SetInitialWorldSettings()
     std::string LevelScalingMethodString = sConfigMgr->GetOption<std::string>("AutoBalance.LevelScaling.Method", "dynamic", false);
 
     if (LevelScalingMethodString == "fixed")
-    {
         LevelScalingMethod = AUTOBALANCE_SCALING_FIXED;
-    }
     else if (LevelScalingMethodString == "dynamic")
-    {
         LevelScalingMethod = AUTOBALANCE_SCALING_DYNAMIC;
-    }
     else
     {
         LOG_ERROR("server.loading", "mod-autobalance: invalid value `{}` for `AutoBalance.LevelScaling.Method` defined in `AutoBalance.conf`. Defaulting to a value of `dynamic`.", LevelScalingMethodString);
@@ -487,13 +486,9 @@ void AutoBalance_WorldScript::SetInitialWorldSettings()
     std::string RewardScalingMethodString = sConfigMgr->GetOption<std::string>("AutoBalance.RewardScaling.Method", "dynamic", false);
 
     if (RewardScalingMethodString == "fixed")
-    {
         RewardScalingMethod = AUTOBALANCE_SCALING_FIXED;
-    }
     else if (RewardScalingMethodString == "dynamic")
-    {
         RewardScalingMethod = AUTOBALANCE_SCALING_DYNAMIC;
-    }
     else
     {
         LOG_ERROR("server.loading", "mod-autobalance: invalid value `{}` for `AutoBalance.RewardScaling.Method` defined in `AutoBalance.conf`. Defaulting to a value of `dynamic`.", RewardScalingMethodString);

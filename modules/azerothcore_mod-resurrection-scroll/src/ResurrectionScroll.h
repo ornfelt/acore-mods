@@ -1,10 +1,10 @@
 #ifndef DEF_RESSURRECTIONSCROLL_H
 #define DEF_RESSURRECTIONSCROLL_H
 
-#include "Player.h"
 #include "Config.h"
-#include "ScriptMgr.h"
+#include "Player.h"
 #include "ScriptedGossip.h"
+#include "ScriptMgr.h"
 
 enum RSSettings
 {

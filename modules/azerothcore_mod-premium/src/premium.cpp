@@ -1,3 +1,4 @@
+#include "Config.h"
 #include "Define.h"
 #include "GossipDef.h"
 #include "Item.h"
@@ -5,7 +6,6 @@
 #include "ScriptedGossip.h"
 #include "ScriptMgr.h"
 #include "Spell.h"
-#include "Config.h"
 
 enum Vendors
 {

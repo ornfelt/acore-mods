@@ -26,7 +26,10 @@
 class DuelResetAfterConfigLoad : public WorldScript
 {
 public:
-    DuelResetAfterConfigLoad() : WorldScript("DuelResetAfterConfigLoad") { }
+    DuelResetAfterConfigLoad() : WorldScript("DuelResetAfterConfigLoad", {
+        WORLDHOOK_ON_AFTER_CONFIG_LOAD,
+        WORLDHOOK_ON_STARTUP
+    }) { }
 
     void OnAfterConfigLoad(bool reload) override
     {
@@ -41,10 +44,13 @@ public:
 
 class DuelResetScript : public PlayerScript {
 public:
-    DuelResetScript() : PlayerScript("DuelResetScript") {}
+    DuelResetScript() : PlayerScript("DuelResetScript", {
+        PLAYERHOOK_ON_DUEL_START,
+        PLAYERHOOK_ON_DUEL_END
+    }) {}
 
     // Called when a duel starts (after 3s countdown)
-    void OnDuelStart(Player *player1, Player *player2) override {
+    void OnPlayerDuelStart(Player *player1, Player *player2) override {
         // Check if Reset is allowed in area or zone
         if (!sDuelReset->IsAllowedInArea(player1)) {
             return;
@@ -80,7 +86,7 @@ public:
     }
 
     // Called when a duel ends
-    void OnDuelEnd(Player *winner, Player *loser, DuelCompleteType type) override
+    void OnPlayerDuelEnd(Player *winner, Player *loser, DuelCompleteType type) override
     {
         // Checking zone here is not necessary and would open options or abuse
         // do not reset anything if DUEL_INTERRUPTED or DUEL_FLED

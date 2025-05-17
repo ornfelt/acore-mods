@@ -1,5 +1,7 @@
 # Sistema VIP para AzerothCore
 
+Read in: [English :gb:](README.md) | [Spanish :es:](README_es.md)
+
 Este módulo proporciona una serie de características VIP para los jugadores en AzerothCore.
 
 ## Características

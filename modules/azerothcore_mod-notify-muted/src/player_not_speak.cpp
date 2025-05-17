@@ -1,6 +1,6 @@
 #include "player_not_speak.h"
 
-void PlayerNotSpeak::OnChat(Player* player, uint32 /*type*/, uint32 /*lang*/, std::string& /*msg*/, Player* receiver)
+void PlayerNotSpeak::OnPlayerChat(Player* player, uint32 /*type*/, uint32 /*lang*/, std::string& /*msg*/, Player* receiver)
 {
     if (!sConfigMgr->GetOption<bool>("PlayerNotSpeak.Enable", false))
         return;

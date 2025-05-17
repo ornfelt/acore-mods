@@ -1,22 +1,22 @@
-#include <map>
-#include "Log.h"
+#include "utils/Utils.h"
+#include "Chat.h"
 #include "Config.h"
-#include "ScriptMgr.h"
-#include "Unit.h"
-#include "Player.h"
-#include "Pet.h"
-#include "Map.h"
 #include "Group.h"
 #include "InstanceScript.h"
-#include "Chat.h"
-#include <math.h>
-#include <unordered_map>
+#include "Log.h"
+#include "Map.h"
 #include "ObjectGuid.h"
-#include "utils/Utils.h"
-#include <iostream>
-#include <vector>
-#include <string>
+#include "Pet.h"
+#include "Player.h"
+#include "ScriptMgr.h"
+#include "Unit.h"
 #include <cstdint>
+#include <iostream>
+#include <map>
+#include <math.h>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 bool SoloCraftEnable = 1;
 bool SoloCraftAnnounceModule = 1;
@@ -45,7 +45,9 @@ float D649H25 = 1.0;
 class SolocraftConfig : public WorldScript
 {
 public:
-    SolocraftConfig() : WorldScript("SolocraftConfig") {}
+    SolocraftConfig() : WorldScript("SolocraftConfig", {
+        WORLDHOOK_ON_BEFORE_CONFIG_LOAD
+    }) {}
 
     void OnBeforeConfigLoad(bool /*reload*/) override
     {
@@ -323,17 +325,20 @@ private:
     std::map<ObjectGuid, bool> playerInInstanceMap;
 
 public:
-    SolocraftAnnounce() : PlayerScript("SolocraftAnnounce") {}
+    SolocraftAnnounce() : PlayerScript("SolocraftAnnounce", {
+        PLAYERHOOK_ON_LOGIN,
+        PLAYERHOOK_ON_LOGOUT,
+        PLAYERHOOK_ON_MAP_CHANGED,
+        PLAYERHOOK_ON_GIVE_EXP
+    }) {}
 
-    void OnLogin(Player* player) override
+    void OnPlayerLogin(Player* player) override
     {
         if (SoloCraftEnable && SoloCraftAnnounceModule)
-        {
             ChatHandler(player->GetSession()).SendSysMessage("This server is running the |cff4CFF00SoloCraft |rmodule.");
-        }
     }
 
-    void OnLogout(Player* player) override
+    void OnPlayerLogout(Player* player) override
     {
         QueryResult result = CharacterDatabase.Query("SELECT `GUID` FROM `custom_solocraft_character_stats` WHERE `GUID`={}", player->GetGUID().GetCounter());
         if (result)
@@ -344,19 +349,15 @@ public:
         playerInInstanceMap.erase(player->GetGUID());
     }
 
-    void OnMapChanged(Player* player) override
+    void OnPlayerMapChanged(Player* player) override
     {
         if (player->GetMap()->IsDungeon() || player->GetMap()->IsRaid())
-        {
             playerInInstanceMap[player->GetGUID()] = true;
-        }
         else
-        {
             playerInInstanceMap[player->GetGUID()] = false;
-        }
     }
 
-    void OnGiveXP(Player* player, uint32& amount, Unit* /*victim*/, uint8 /*xpSource*/) override
+    void OnPlayerGiveXP(Player* player, uint32& amount, Unit* /*victim*/, uint8 /*xpSource*/) override
     {
         if (SolocraftXPBalEnabled && playerInInstanceMap[player->GetGUID()])
         {
@@ -369,14 +370,16 @@ public:
 class SolocraftPlayerInstanceHandler : public PlayerScript
 {
 public:
-    SolocraftPlayerInstanceHandler() : PlayerScript("SolocraftPlayerInstanceHandler") {}
+    SolocraftPlayerInstanceHandler() : PlayerScript("SolocraftPlayerInstanceHandler", {
+        PLAYERHOOK_ON_MAP_CHANGED
+    }) {}
     
     bool IsInSolocraftInstanceExcludedList(uint32 id)
     {
         return find(SolocraftInstanceExcluded.begin(), SolocraftInstanceExcluded.end(), id) != SolocraftInstanceExcluded.end();
     }
 
-    void OnMapChanged(Player* player) override
+    void OnPlayerMapChanged(Player* player) override
     {
         if (sConfigMgr->GetOption<bool>("Solocraft.Enable", true))
         {
@@ -395,20 +398,14 @@ public:
         if (map)
         {
             if (IsInSolocraftInstanceExcludedList(map->GetId()))
-            {
                 return 0;
-            }
 
             if (map->Is25ManRaid())
             {
                 if (map->IsHeroic() && map->GetId() == 649)
-                {
                     return D649H25;
-                }
                 else if (diff_Multiplier_Heroics.find(map->GetId()) == diff_Multiplier_Heroics.end())
-                {
                     return D25;
-                }
                 else
                     return diff_Multiplier_Heroics[map->GetId()];
             }
@@ -416,13 +413,9 @@ public:
             if (map->IsHeroic())
             {
                 if (map->GetId() == 649)
-                {
                     return D649H10;
-                }
                 else if (diff_Multiplier_Heroics.find(map->GetId()) == diff_Multiplier_Heroics.end())
-                {
                     return D10;
-                }
                 else
                     return diff_Multiplier_Heroics[map->GetId()];
             }
@@ -430,13 +423,9 @@ public:
             if (diff_Multiplier.find(map->GetId()) == diff_Multiplier.end())
             {
                 if (map->IsDungeon())
-                {
                     return D5;
-                }
                 else if (map->IsRaid())
-                {
                     return D40;
-                }
             }
             else
                 return diff_Multiplier[map->GetId()];
@@ -449,13 +438,9 @@ public:
     uint32 CalculateDungeonLevel(Map* map)
     {
         if (dungeons.find(map->GetId()) == dungeons.end())
-        {
             return SolocraftDungeonLevel;
-        }
         else
-        {
             return dungeons[map->GetId()];
-        }
     }
 
     // Get the group's size
@@ -479,13 +464,9 @@ public:
         uint32 classBalance = 100;
 
         if (classes.find(player->getClass()) == classes.end())
-        {
             return classBalance;
-        }
         else if (classes[player->getClass()] >= 0 && classes[player->getClass()] <= 100)
-        {
             return classes[player->getClass()];
-        }
         else
             return classBalance;
     }
@@ -507,9 +488,7 @@ public:
                     if (result)
                     {
                         if ((*result)[1].Get<float>() > 0)
-                        {
                             GroupDifficulty = GroupDifficulty + (*result)[1].Get<float>();
-                        }
                     }
                 }
             }
@@ -533,23 +512,17 @@ public:
             SoloCraftXPMod = 1.0;
 
             for (uint32 i = STAT_STRENGTH; i < MAX_STATS; ++i)
-            {
                 player->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_PCT, difficulty * StatsMultPct, false);
-            }
 
             if (player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN) && !SolocraftNoXPFlag)
-            {
                 player->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-            }
 
             SolocraftNoXPFlag = 0;
             CharacterDatabase.Execute("DELETE FROM custom_solocraft_character_stats WHERE GUID = {}", player->GetGUID().GetCounter());
         }
 
         if (player->getPowerType() == POWER_MANA || player->getClass() == CLASS_DRUID)
-        {
             player->ApplySpellPowerBonus(SpellPowerBonus, false);
-        }
     }
 
     // Apply the player buffs
@@ -557,9 +530,7 @@ public:
     {
         // Check whether to debuff back to normal or check to buff the player
         if (difficulty == 0 || IsInSolocraftInstanceExcludedList(map->GetId()))
-        {
             ClearBuffs(player); // Check to revert player back to normal - Moving this here fixed logout and login while in instance buff and debuff issues
-        }
         else
         {
             std::ostringstream ss;
@@ -568,9 +539,7 @@ public:
 
             // Check for an existing No XP Gain flag - other mod compatibility
             if (player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN))
-            {
                 SolocraftNoXPFlag = 1;
-            }
 
             // If a player is too high level for dungeon don't buff but if in a group will count towards the group offset balancing.
             if (player->GetLevel() <= dunLevel + SolocraftLevelDiff)
@@ -589,9 +558,7 @@ public:
 
                     // Disable player XP gain if debuff applied
                     if (!player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN) && SolocraftXPBalEnabled)
-                    {
                         player->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-                    }
                 }
                 else
                 {
@@ -610,16 +577,12 @@ public:
                     {
                         SoloCraftXPMod = 0;
                         if (!player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN) && SolocraftXPBalEnabled)
-                        {
                             player->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-                        }
                     }
 
                     // Check XP modifier for over max limit and adjust
                     if (SoloCraftXPMod > 1)
-                    {
                         SoloCraftXPMod = 1.0;
-                    }
                 }
 
                 // Check Database for a current dungeon entry
@@ -631,9 +594,7 @@ public:
                 {
                     // Check for Dungeon to Dungeon Transfer and remove old buff
                     if (result)
-                    {
                         player->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_PCT, (*result)[1].Get<float>() * (*result)[4].Get<float>(), false);
-                    }
                     // Buff the player
                     // Unitmods enum UNIT_MOD_STAT_START defined in Unit.h line 391
                     player->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_PCT, difficulty * SoloCraftStatsMult, true);
@@ -668,7 +629,18 @@ public:
                     // Debuffed characters do not get spellpower
                     if (difficulty > 0)
                     {
-                        SpellPowerBonus = static_cast<int>((player->GetLevel() * SoloCraftSpellMult) * difficulty);
+                        int32 maxBonus = 0;
+                        for (uint8 school = SPELL_SCHOOL_NORMAL; school <= MAX_SPELL_SCHOOL; ++school) {
+                            //SpellSchools spellSchool = static_cast<SpellSchools>(school);
+
+                            int32 damage = player->SpellBaseDamageBonusDone(SpellSchoolMask(1 << school));
+                            int32 healing = player->SpellBaseHealingBonusDone(SpellSchoolMask(1 << school));
+
+                            maxBonus = std::max(maxBonus, damage);
+                            maxBonus = std::max(maxBonus, healing);
+
+                        }
+                        SpellPowerBonus = static_cast<int>((maxBonus * SoloCraftSpellMult) * difficulty);
                         player->ApplySpellPowerBonus(SpellPowerBonus, true);
                     }
                 }
@@ -678,9 +650,7 @@ public:
                 {
                     SoloCraftXPMod = 0;
                     if (!player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN))
-                    {
                         player->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-                    }
                 }
 
                 // Announcements
@@ -689,19 +659,19 @@ public:
                     // Announce to player - Buff
                     if (!SolocraftXPEnabled)
                     {
-                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered %s  - Difficulty Offset: %0.2f. Spellpower Bonus: %i. Class Balance Weight: %i.  XP Gain: |cffFF0000Disabled";
+                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - Difficulty Offset: {:.2f}. Spellpower Bonus: {}. Class Balance Weight: {}.  XP Gain: |cffFF0000Disabled";
                         ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, SpellPowerBonus, classBalance);
                     }
                     else
                     {
                         if (!SolocraftXPBalEnabled)
                         {
-                            ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered %s  - Difficulty Offset: %0.2f. Spellpower Bonus: %i. Class Balance Weight: %i.  XP Balancing: |cffFF0000Disabled";
+                            ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - Difficulty Offset: {:.2f}. Spellpower Bonus: {}. Class Balance Weight: {}.  XP Balancing: |cffFF0000Disabled";
                             ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, SpellPowerBonus, classBalance);
                         }
                         else
                         {
-                            ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered %s  - Difficulty Offset: %0.2f. Spellpower Bonus: %i. Class Balance Weight: %i.  XP Balancing: |cff4CFF00Enabled";
+                            ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - Difficulty Offset: {:.2f}. Spellpower Bonus: {}. Class Balance Weight: {}.  XP Balancing: |cff4CFF00Enabled";
                             ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, SpellPowerBonus, classBalance);
                         }
                     }
@@ -711,12 +681,12 @@ public:
                     // Announce to player - Debuff
                     if (!SolocraftXPBalEnabled && SolocraftXPEnabled)
                     {
-                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered %s  - |cffFF0000BE ADVISED - You have been debuffed by offset: %0.2f with a Class Balance Weight: %i. |cffFF8000 A group member already inside has the dungeon's full buff offset.  No Spellpower buff will be applied to spell casters.  ALL group members must exit the dungeon and re-enter to receive a balanced offset.";
+                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - |cffFF0000BE ADVISED - You have been debuffed by offset: {:.2f} with a Class Balance Weight: {}. |cffFF8000 A group member already inside has the dungeon's full buff offset.  No Spellpower buff will be applied to spell casters.  ALL group members must exit the dungeon and re-enter to receive a balanced offset.";
                         ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, classBalance);
                     }
                     else
                     {
-                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered %s  - |cffFF0000BE ADVISED - You have been debuffed by offset: %0.2f with a Class Balance Weight: %i and no XP will be awarded. |cffFF8000 A group member already inside has the dungeon's full buff offset.  No Spellpower buff will be applied to spell casters.  ALL group members must exit the dungeon and re-enter to receive a balanced offset.";
+                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - |cffFF0000BE ADVISED - You have been debuffed by offset: {:.2f} with a Class Balance Weight: {} and no XP will be awarded. |cffFF8000 A group member already inside has the dungeon's full buff offset.  No Spellpower buff will be applied to spell casters.  ALL group members must exit the dungeon and re-enter to receive a balanced offset.";
                         ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, classBalance);
                     }
                 }
@@ -727,7 +697,7 @@ public:
             else
             {
                 // Announce to player - Over Max Level Threshold
-                ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered %s  - |cffFF0000You have not been buffed. |cffFF8000 Your level is higher than the max level (%i) threshold for this dungeon.";
+                ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - |cffFF0000You have not been buffed. |cffFF8000 Your level is higher than the max level ({}) threshold for this dungeon.";
                 ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), dunLevel + SolocraftLevelDiff);
                 ClearBuffs(player); // Check to revert player back to normal
             }

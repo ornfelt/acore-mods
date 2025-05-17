@@ -239,7 +239,7 @@ help
             statusString += " Horde:\n";
             statusString += "    Seller Enabled: " + std::to_string(auctionator->config->hordeSeller.enabled) + "\n";
             statusString += "        Max Auctions: " + std::to_string(auctionator->config->hordeSeller.maxAuctions) + "\n";
-            statusString += "        Auctions: " + std::to_string(auctionator->GetAuctionHouse(AUCTIONHOUSE_HORDE)->Getcount()) + "\n";
+            statusString += "        Auctions: " + std::to_string(auctionator->GetAuctionHouse((uint32)AuctionHouseId::Horde)->Getcount()) + "\n";
             statusString += "    Bidder Enabled: " + std::to_string(auctionator->config->hordeBidder.enabled) + "\n";
             statusString += "        Cycle Time: " + std::to_string(auctionator->config->hordeBidder.cycleMinutes) + "\n";
             statusString += "        Per Cycle: " + std::to_string(auctionator->config->hordeBidder.maxPerCycle) + "\n";
@@ -247,7 +247,7 @@ help
             statusString += " Alliance:\n";
             statusString += "    Seller Enabled: " + std::to_string(auctionator->config->allianceSeller.enabled) + "\n";
             statusString += "        Max Auctions: " + std::to_string(auctionator->config->allianceSeller.maxAuctions) + "\n";
-            statusString += "        Auctions: " + std::to_string(auctionator->GetAuctionHouse(AUCTIONHOUSE_ALLIANCE)->Getcount()) + "\n";
+            statusString += "        Auctions: " + std::to_string(auctionator->GetAuctionHouse((uint32)AuctionHouseId::Alliance)->Getcount()) + "\n";
             statusString += "    Bidder Enabled: " + std::to_string(auctionator->config->allianceBidder.enabled) + "\n";
             statusString += "        Cycle Time: " + std::to_string(auctionator->config->allianceBidder.cycleMinutes) + "\n";
             statusString += "        Per Cycle: " + std::to_string(auctionator->config->allianceBidder.maxPerCycle) + "\n";
@@ -255,7 +255,7 @@ help
             statusString += " Neutral:\n";
             statusString += "    Seller Enabled: " + std::to_string(auctionator->config->neutralSeller.enabled) + "\n";
             statusString += "        Max Auctions: " + std::to_string(auctionator->config->neutralSeller.maxAuctions) + "\n";
-            statusString += "        Auctions: " + std::to_string(auctionator->GetAuctionHouse(AUCTIONHOUSE_NEUTRAL)->Getcount()) + "\n";
+            statusString += "        Auctions: " + std::to_string(auctionator->GetAuctionHouse((uint32)AuctionHouseId::Neutral)->Getcount()) + "\n";
             statusString += "    Bidder Enabled: " + std::to_string(auctionator->config->neutralBidder.enabled) + "\n";
             statusString += "        Cycle Time: " + std::to_string(auctionator->config->neutralBidder.cycleMinutes) + "\n";
             statusString += "        Per Cycle: " + std::to_string(auctionator->config->neutralBidder.maxPerCycle) + "\n";

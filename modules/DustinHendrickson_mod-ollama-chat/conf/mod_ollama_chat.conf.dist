@@ -1,0 +1,93 @@
+[worldserver]
+
+########################################
+# mod-ollama-chat configuration
+########################################
+
+# OllamaChat.Enable
+#     Description: Enable or disable the module.
+#     Default:     1 (true)
+OllamaChat.Enable = 1
+
+# OllamaChat.SayDistance
+#     Description: The maximum distance (in game units) a bot must be within to reply on a Say message.
+#     Default:     30.0
+OllamaChat.SayDistance = 30.0
+
+# OllamaChat.YellDistance
+#     Description: The maximum distance (in game units) a bot must be within to reply on a Yell message.
+#     Default:     100.0
+OllamaChat.YellDistance = 100.0
+
+# OllamaChat.GeneralDistance
+#     Description: The maximum distance (in game units) a bot must be within to reply on a custom (SRC_GENERAL) channel.
+#     Default:     600.0
+OllamaChat.GeneralDistance = 600.0
+
+# OllamaChat.PlayerReplyChance
+#     Description: The percent chance (0-100) that an eligible bot replies when the sender is a player.
+#     Default:     90
+OllamaChat.PlayerReplyChance = 90
+
+# OllamaChat.BotReplyChance
+#     Description: The percent chance (0-100) that an eligible bot replies when the sender is an AI bot.
+#     Default:     10
+OllamaChat.BotReplyChance = 10
+
+# OllamaChat.MaxBotsToPick
+#     Description: The maximum number of bots that can be randomly selected to reply when no bot name is explicitly mentioned.
+#     Default:     2
+OllamaChat.MaxBotsToPick = 2
+
+# OllamaChat.Url
+#     Description: The URL used to query the Ollama API.
+#     Default:     http://localhost:11434/api/generate
+OllamaChat.Url = http://localhost:11434/api/generate
+
+# OllamaChat.Model
+#     Description: The model identifier to be used in the Ollama API request.
+#     Default:     llama3.2:1b
+OllamaChat.Model = llama3.2:1b
+
+# OllamaChat.EnableRandomChatter
+#     Description: Enable or disable random chatter from AI bots when a real player is nearby.
+#     Default:     1 (true)
+OllamaChat.EnableRandomChatter = 1
+
+# OllamaChat.MinRandomInterval
+#     Description: The minimum time (in seconds) between random lines from an AI bot.
+#     Default:     45
+OllamaChat.MinRandomInterval = 45
+
+# OllamaChat.MaxRandomInterval
+#     Description: The maximum time (in seconds) between random lines from an AI bot.
+#     Default:     180
+OllamaChat.MaxRandomInterval = 180
+
+# OllamaChat.EnableRPPersonalities
+#     Description: Enables or disables the use of predefined roleplay personalities for AI bots.
+#                  When enabled (1), bots will respond with distinct personalities based on their assigned type.
+#                  When disabled (0), bots will use a neutral/default response style.
+#     Default:     0 (false)
+OllamaChat.EnableRPPersonalities = 0
+
+# OllamaChat.RandomChatterRealPlayerDistance
+#     Description: The maximum distance (in game units) a real player must be within for random bot chatter to trigger.
+#     Default:     40
+OllamaChat.RandomChatterRealPlayerDistance = 40.0
+
+# OllamaChat.RandomChatterBotCommentChance
+#     Description: The percent chance (0-100) that an AI bot will add a comment when random chatter is triggered.
+#     Default:     25
+OllamaChat.RandomChatterBotCommentChance = 25
+
+# OllamaChat.BlacklistCommands
+#     Description: A comma-separated list of command prefixes that should be ignored by AI bots.
+#                  If a message starts with any of these prefixes, the bot will not respond.
+#     Default:     
+OllamaChat.BlacklistCommands = 
+
+# OllamaChat.MaxConcurrentQueries
+#     Description: The maximum number of concurrent API queries allowed. Use 0 for no limit.
+#     Default:     0
+OllamaChat.MaxConcurrentQueries = 0

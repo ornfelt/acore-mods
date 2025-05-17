@@ -30,17 +30,15 @@
  */
 
 #include "AccountMgr.h"
-#include "ScriptMgr.h"
+#include "Chat.h"
+#include "Common.h"
+#include "Config.h"
+#include "ObjectAccessor.h"
+#include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "ScriptedGossip.h"
-#include "Config.h"
-#include "Common.h"
-#include "Chat.h"
-#include "ObjectAccessor.h"
-#include "ObjectMgr.h"
-#include "Player.h"
 #include "SharedDefines.h"
 #include "World.h"
 #include "WorldSession.h"
@@ -156,23 +154,25 @@ void Azerothcore_skip_deathknight_HandleSkip(Player* player)
 class AzerothCore_skip_deathknight_announce : public PlayerScript
 {
 public:
-    AzerothCore_skip_deathknight_announce() : PlayerScript("AzerothCore_skip_deathknight_announce") { }
+    AzerothCore_skip_deathknight_announce() : PlayerScript("AzerothCore_skip_deathknight_announce", {
+        PLAYERHOOK_ON_LOGIN
+    }) { }
 
-    void OnLogin(Player* Player)
+    void OnPlayerLogin(Player* Player)
     {
         if (sConfigMgr->GetOption<bool>("Skip.Deathknight.Starter.Announce.enable", true) && (sConfigMgr->GetOption<bool>("Skip.Deathknight.Starter.Enable", true) || sConfigMgr->GetOption<bool>("Skip.Deathknight.Optional.Enable", true)))
-        {
             ChatHandler(Player->GetSession()).SendSysMessage("This server is running the |cff4CFF00Azerothcore Skip Deathknight Starter |rmodule.");
-        }
     }
 };
 
 class AzerothCore_skip_deathknight : public PlayerScript
 {
 public:
-    AzerothCore_skip_deathknight() : PlayerScript("AzerothCore_skip_deathknight") { }
+    AzerothCore_skip_deathknight() : PlayerScript("AzerothCore_skip_deathknight", {
+        PLAYERHOOK_ON_FIRST_LOGIN
+    }) { }
 
-    void OnFirstLogin(Player* player)
+    void OnPlayerFirstLogin(Player* player) override
     {
         if (player->GetAreaId() == 4342)
         {
@@ -204,9 +204,7 @@ public:
         bool OnGossipHello(Player* player, Creature* creature) override
         {
             if (creature->IsQuestGiver())
-            {
                 player->PrepareQuestMenu(creature->GetGUID());
-            }
 
             if (sConfigMgr->GetOption<bool>("Skip.Deathknight.Optional.Enable", true))
             {

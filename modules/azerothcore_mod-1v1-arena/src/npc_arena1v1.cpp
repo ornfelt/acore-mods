@@ -69,7 +69,9 @@ void deleteTeamArenaForPlayer(Player* player)
 class configloader_1v1arena : public WorldScript
 {
 public:
-    configloader_1v1arena() : WorldScript("configloader_1v1arena") {}
+    configloader_1v1arena() : WorldScript("configloader_1v1arena", {
+        WORLDHOOK_ON_AFTER_CONFIG_LOAD
+    }) {}
 
     virtual void OnAfterConfigLoad(bool /*Reload*/) override
     {
@@ -93,22 +95,26 @@ public:
 class playerscript_1v1arena : public PlayerScript
 {
 public:
-    playerscript_1v1arena() : PlayerScript("playerscript_1v1arena") { }
+    playerscript_1v1arena() : PlayerScript("playerscript_1v1arena", {
+        PLAYERHOOK_ON_LOGIN,
+        PLAYERHOOK_ON_GET_MAX_PERSONAL_ARENA_RATING_REQUIREMENT,
+        PLAYERHOOK_ON_GET_ARENA_TEAM_ID
+    }) { }
 
-    void OnLogin(Player* pPlayer) override
+    void OnPlayerLogin(Player* pPlayer) override
     {
         if (sConfigMgr->GetOption<bool>("Arena1v1.Announcer", true))
             ChatHandler(pPlayer->GetSession()).SendSysMessage("This server is running the |cff4CFF00Arena 1v1 |rmodule.");
     }
 
-    void OnGetMaxPersonalArenaRatingRequirement(const Player* player, uint32 minslot, uint32& maxArenaRating) const override
+    void OnPlayerGetMaxPersonalArenaRatingRequirement(const Player* player, uint32 minslot, uint32& maxArenaRating) const override
     {
         if (sConfigMgr->GetOption<bool>("Arena1v1.VendorRating", false) && minslot < (uint32)sConfigMgr->GetOption<uint32>("Arena1v1.ArenaSlotID", 3))
             if (ArenaTeam* at = sArenaTeamMgr->GetArenaTeamByCaptain(player->GetGUID(), ARENA_TEAM_1V1))
                 maxArenaRating = std::max(at->GetRating(), maxArenaRating);
     }
 
-    void OnGetArenaTeamId(Player* player, uint8 slot, uint32& result) override
+    void OnPlayerGetArenaTeamId(Player* player, uint8 slot, uint32& result) override
     {
         if (!player)
             return;
@@ -426,7 +432,13 @@ bool npc_1v1arena::Arena1v1CheckTalents(Player* player)
 class team_1v1arena : public ArenaTeamScript
 {
 public:
-    team_1v1arena() : ArenaTeamScript("team_1v1arena") {}
+    team_1v1arena() : ArenaTeamScript("team_1v1arena", {
+        ARENATEAMHOOK_ON_GET_SLOT_BY_TYPE,
+        ARENATEAMHOOK_ON_GET_ARENA_POINTS,
+        ARENATEAMHOOK_ON_TYPEID_TO_QUEUEID,
+        ARENATEAMHOOK_ON_QUEUEID_TO_ARENA_TYPE,
+        ARENATEAMHOOK_ON_SET_ARENA_MAX_PLAYERS_PER_TEAM
+    }) {}
 
     void OnGetSlotByType(const uint32 type, uint8& slot) override
     {

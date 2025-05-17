@@ -2,12 +2,12 @@
  * Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
  */
 
-#include "ScriptMgr.h"
-#include "Player.h"
-#include "Config.h"
-#include "Chat.h"
-#include "GameTime.h"
 #include "ResurrectionScroll.h"
+#include "Chat.h"
+#include "Config.h"
+#include "GameTime.h"
+#include "Player.h"
+#include "ScriptMgr.h"
 
 ResurrectionScroll* ResurrectionScroll::instance()
 {
@@ -18,9 +18,12 @@ ResurrectionScroll* ResurrectionScroll::instance()
 class mod_resurrection_scroll_playerscript : public PlayerScript
 {
 public:
-    mod_resurrection_scroll_playerscript() : PlayerScript("mod_resurrection_scroll_playerscript") { }
+    mod_resurrection_scroll_playerscript() : PlayerScript("mod_resurrection_scroll_playerscript", {
+        PLAYERHOOK_ON_LOGIN,
+        PLAYERHOOK_ON_LEVEL_CHANGED
+    }) { }
 
-    void OnLogin(Player* player) override
+    void OnPlayerLogin(Player* player) override
     {
         if (!sResScroll->IsEnabled)
            return;
@@ -41,7 +44,7 @@ public:
         }
     }
 
-    void OnLevelChanged(Player* player, uint8 /*oldlevel*/) override
+    void OnPlayerLevelChanged(Player* player, uint8 /*oldlevel*/) override
     {
         if (!sResScroll->IsEnabled)
             return;
@@ -75,7 +78,9 @@ public:
 class mod_resurrection_scroll_worldscript : public WorldScript
 {
 public:
-    mod_resurrection_scroll_worldscript() : WorldScript("mod_resurrection_scroll_worldscript") { }
+    mod_resurrection_scroll_worldscript() : WorldScript("mod_resurrection_scroll_worldscript", {
+        WORLDHOOK_ON_AFTER_CONFIG_LOAD
+    }) { }
 
     void OnAfterConfigLoad(bool /*reload*/) override
     {

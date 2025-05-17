@@ -1,6 +1,6 @@
 #include "zone_area_tracker.h"
 
-void ZoneAreaTracker::OnUpdateArea(Player* player, uint32 oldArea, uint32 newArea)
+void ZoneAreaTracker::OnPlayerUpdateArea(Player* player, uint32 oldArea, uint32 newArea)
 {
     if (loggingEnabled && (oldArea != newArea))
     {
@@ -17,13 +17,9 @@ void ZoneAreaTracker::OnUpdateArea(Player* player, uint32 oldArea, uint32 newAre
         areaStream << oldArea << ", " << newArea << ", " << inGroup << ", ";
 
         if (group != nullptr)
-        {
             areaStream << group->isRaidGroup();
-        }
         else
-        {
             areaStream << "false";
-        }
 
         areaStream << "\n";
 

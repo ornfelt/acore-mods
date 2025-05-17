@@ -5,18 +5,19 @@
 #ifndef __AB_UTILS_H
 #define __AB_UTILS_H
 
-#include <list>
-#include <map>
-#include <string>
+#include "ABInflectionPointSettings.h"
+#include "ABLevelScalingDynamicLevelSettings.h"
+#include "ABMapInfo.h"
+#include "ABStatModifiers.h"
+#include "AutoBalance.h"
 
 #include "Creature.h"
 #include "Map.h"
 #include "SharedDefines.h"
 
-#include "AutoBalance.h"
-#include "ABInflectionPointSettings.h"
-#include "ABLevelScalingDynamicLevelSettings.h"
-#include "ABStatModifiers.h"
+#include <list>
+#include <map>
+#include <string>
 
 void AddCreatureToMapCreatureList(Creature* creature, bool addToCreatureList = true, bool forceRecalculation = false);
 void RemoveCreatureFromMapData(Creature* creature);
@@ -58,5 +59,6 @@ void UpdateMapPlayerStats (Map* map);
 void AddPlayerToMap(Map* map, Player* player);
 bool RemovePlayerFromMap(Map* map, Player* player);
 bool UpdateMapDataIfNeeded(Map* map, bool force = false);
+AutoBalanceMapInfo* GetMapInfo(Map* map);
 
 #endif

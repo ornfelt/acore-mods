@@ -1,17 +1,19 @@
-#include "ScriptMgr.h"
-#include "Player.h"
 #include "AccountMgr.h"
 #include "Common.h"
 #include "Configuration/Config.h"
+#include "Player.h"
+#include "ScriptMgr.h"
 
 uint32 TimeCheck_AutoRevive = 0;
 
 class AutoRevive_PlayerSC : public PlayerScript
 {
 public:
-    AutoRevive_PlayerSC() : PlayerScript("AutoRevive_PlayerSC") {}
+    AutoRevive_PlayerSC() : PlayerScript("AutoRevive_PlayerSC", {
+        PLAYERHOOK_ON_BEFORE_UPDATE
+    }) {}
 
-    void OnBeforeUpdate(Player* player, uint32 diff)
+    void OnPlayerBeforeUpdate(Player* player, uint32 diff)
     {
         if (!sConfigMgr->GetOption<bool>("AutoRevive.Enable", false))
             return;

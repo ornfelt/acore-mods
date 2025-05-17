@@ -24,7 +24,7 @@ struct AuctionatorItem
 
     AuctionatorItem() :
         itemId(0),
-        houseId(AUCTIONHOUSE_NEUTRAL),
+        houseId((uint32)AuctionHouseId::Neutral),
         bid(0),
         buyout(0),
         time(172800),

@@ -2,10 +2,10 @@
  * Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
  */
 
-#include "ScriptMgr.h"
-#include "Player.h"
-#include "Config.h"
 #include "Chat.h"
+#include "Config.h"
+#include "Player.h"
+#include "ScriptMgr.h"
 
 enum QuestIds
 {
@@ -28,19 +28,17 @@ enum QuestIds
 class BgQuestRewardScript : public BGScript
 {
 public:
-    BgQuestRewardScript() : BGScript("mod_bg_quest_reward_script") { }
+    BgQuestRewardScript() : BGScript("mod_bg_quest_reward_script", {
+        ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_END_REWARD
+    }) { }
 
     void OnBattlegroundEndReward(Battleground* /*bg*/, Player* player, TeamId winnerTeamId) override
     {
         if (!sConfigMgr->GetOption<bool>("ModPvPQuests.Enable", true))
-        {
             return;
-        }
 
         if (player->GetMap()->IsBattleArena())
-        {
             return;
-        }
 
         if (winnerTeamId == player->GetBgTeamId())
         {
@@ -53,9 +51,7 @@ public:
                     player->RewardQuest(quest, 0, nullptr, true, true);
 
                     if (int32 ap = sConfigMgr->GetOption<int>("ModPvPQuests.WinAP", 10))
-                    {
                         player->ModifyArenaPoints(ap);
-                    }
                 }
             }
         }

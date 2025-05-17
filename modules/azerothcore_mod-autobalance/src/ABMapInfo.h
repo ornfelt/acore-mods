@@ -5,11 +5,11 @@
 #ifndef __AB_MAP_INFO_H
 #define __AB_MAP_INFO_H
 
-#include <vector>
-
 #include "Creature.h"
 #include "DataMap.h"
 #include "Player.h"
+
+#include <vector>
 
 class AutoBalanceMapInfo : public DataMap::Base
 {
@@ -57,6 +57,6 @@ public:
     uint8    levelScalingDynamicFloor           = 0;     // How many levels LESS than the highestPlayerLevel creature should be scaled to
 
     uint8    prevMapLevel                       = 0;     // Used to reduce calculations when they are not necessary
+    bool     initialized                        = false; // Whether or not the map has been initialized
 };
-
 #endif

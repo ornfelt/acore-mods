@@ -1,12 +1,12 @@
 //Reward system made by Talamortis
 
-#include "Configuration/Config.h"
-#include "Player.h"
 #include "AccountMgr.h"
-#include "ScriptMgr.h"
+#include "Chat.h"
+#include "Configuration/Config.h"
 #include "Define.h"
 #include "GossipDef.h"
-#include "Chat.h"
+#include "Player.h"
+#include "ScriptMgr.h"
 
 bool RewardSystem_Enable;
 uint32 Max_roll;
@@ -15,20 +15,22 @@ class reward_system : public PlayerScript
 {
 
 public:
-    reward_system() : PlayerScript("reward_system") {}
+    reward_system() : PlayerScript("reward_system", {
+        PLAYERHOOK_ON_LOGIN,
+        PLAYERHOOK_ON_BEFORE_UPDATE
+    }) {}
 
     uint32 initialTimer = (sConfigMgr->GetOption<uint32>("RewardTime", 1) * HOUR * IN_MILLISECONDS);
     uint32 RewardTimer = initialTimer;
     int32 roll;
 
-    void OnLogin(Player* player)  override
+    void OnPlayerLogin(Player* player)  override
     {
-        if (sConfigMgr->GetOption<bool>("RewardSystemEnable", true) && sConfigMgr->GetOption<bool>("RewardSystem.Announce", true)) {
+        if (sConfigMgr->GetOption<bool>("RewardSystemEnable", true) && sConfigMgr->GetOption<bool>("RewardSystem.Announce", true))
             ChatHandler(player->GetSession()).SendSysMessage("This server is running the |cff4CFF00Reward Time Played |rmodule.");
-        }
     }
 
-    void OnBeforeUpdate(Player* player, uint32 p_time) override
+    void OnPlayerBeforeUpdate(Player* player, uint32 p_time) override
     {
         if (sConfigMgr->GetOption<bool>("RewardSystemEnable", true))
         {
@@ -66,7 +68,8 @@ public:
 
                     RewardTimer = initialTimer;
                 }
-                else  RewardTimer -= p_time;
+                else
+                    RewardTimer -= p_time;
             }
         }
     }
@@ -144,13 +147,14 @@ public:
 class reward_system_conf : public WorldScript
 {
 public:
-    reward_system_conf() : WorldScript("reward_system_conf") { }
+    reward_system_conf() : WorldScript("reward_system_conf", {
+        WORLDHOOK_ON_BEFORE_CONFIG_LOAD
+    }) { }
 
     void OnBeforeConfigLoad(bool reload) override
     {
-        if (!reload) {
+        if (!reload)
             Max_roll = sConfigMgr->GetOption<uint32>("MaxRoll", 1000);
-        }
     }
 };
 

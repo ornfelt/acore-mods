@@ -9,7 +9,16 @@
 #include "AuctionHouseBotCommon.h"
 #include "AuctionHouseBotAuctionHouseScript.h"
 
-AHBot_AuctionHouseScript::AHBot_AuctionHouseScript() : AuctionHouseScript("AHBot_AuctionHouseScript")
+AHBot_AuctionHouseScript::AHBot_AuctionHouseScript() : AuctionHouseScript("AHBot_AuctionHouseScript", {
+    AUCTIONHOUSEHOOK_ON_BEFORE_AUCTIONHOUSEMGR_SEND_AUCTION_SUCCESSFUL_MAIL,
+    AUCTIONHOUSEHOOK_ON_BEFORE_AUCTIONHOUSEMGR_SEND_AUCTION_EXPIRED_MAIL,
+    AUCTIONHOUSEHOOK_ON_BEFORE_AUCTIONHOUSEMGR_SEND_AUCTION_OUTBIDDED_MAIL,
+    AUCTIONHOUSEHOOK_ON_AUCTION_ADD,
+    AUCTIONHOUSEHOOK_ON_AUCTION_REMOVE,
+    AUCTIONHOUSEHOOK_ON_AUCTION_SUCCESSFUL,
+    AUCTIONHOUSEHOOK_ON_AUCTION_EXPIRE,
+    AUCTIONHOUSEHOOK_ON_BEFORE_AUCTIONHOUSEMGR_UPDATE
+})
 {
 
 }
@@ -80,12 +89,12 @@ void AHBot_AuctionHouseScript::OnBeforeAuctionHouseMgrSendAuctionOutbiddedMail(
 
 void AHBot_AuctionHouseScript::OnAuctionAdd(AuctionHouseObject* /*ah*/, AuctionEntry* auction)
 {
-    // 
+    //
     // The the configuration for the auction house
-    // 
+    //
 
     AuctionHouseEntry const* ahEntry = sAuctionMgr->GetAuctionHouseEntryFromHouse(auction->GetHouseId());
-    AHBConfig*               config  = gNeutralConfig;
+    AHBConfig* config  = gNeutralConfig;
 
     if (ahEntry)
     {
@@ -99,9 +108,9 @@ void AHBot_AuctionHouseScript::OnAuctionAdd(AuctionHouseObject* /*ah*/, AuctionE
         }
     }
 
-    // 
+    //
     // Consider only those auctions handled by the bots
-    // 
+    //
 
     if (config->ConsiderOnlyBotAuctions)
     {
@@ -121,7 +130,7 @@ void AHBot_AuctionHouseScript::OnAuctionAdd(AuctionHouseObject* /*ah*/, AuctionE
     {
         if (config->DebugOut)
         {
-            LOG_ERROR("module", "AHBot: Item {} doesn't exist, perhaps bought already?", auction->item_guid.ToString());
+            LOG_ERROR("module", "AHBot: Item {} for entryiD={} doesn't exist, perhaps bought already?", auction->item_guid.ToString(), auction->Id);
         }
 
         return;
@@ -133,22 +142,22 @@ void AHBot_AuctionHouseScript::OnAuctionAdd(AuctionHouseObject* /*ah*/, AuctionE
 
     ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(auction->item_template);
 
+    config->IncItemCounts(prototype->Class, prototype->Quality);
+
     if (config->DebugOut)
     {
-        LOG_INFO("module", "AHBot: ah={}, item={}, count={}", auction->GetHouseId(), auction->item_template, config->GetItemCounts(prototype->Quality));
-    }
-
-    config->IncItemCounts(prototype->Class, prototype->Quality);
+        LOG_INFO("module", "AHBot: Auction Added ah={}, auctionId={}, totalAHItems = {}", AuctionHouseId(ahEntry->houseId), auction->Id, config->TotalItemCounts());
+    }    
 }
 
+// this is called after the auction has been removed from the DB
 void AHBot_AuctionHouseScript::OnAuctionRemove(AuctionHouseObject* /*ah*/, AuctionEntry* auction)
 {
     // 
     // Get the configuration for the auction house
-    // 
-
+    //
     AuctionHouseEntry const* ahEntry = sAuctionMgr->GetAuctionHouseEntryFromHouse(auction->GetHouseId());
-    AHBConfig*               config  = gNeutralConfig;
+    AHBConfig* config = gNeutralConfig;
 
     if (ahEntry)
     {
@@ -162,10 +171,7 @@ void AHBot_AuctionHouseScript::OnAuctionRemove(AuctionHouseObject* /*ah*/, Aucti
         }
     }
 
-    // 
     // Consider only those auctions handled by the bots
-    // 
-
     if (config->ConsiderOnlyBotAuctions)
     {
         if (gBotsId.find(auction->owner.GetCounter()) != gBotsId.end())
@@ -174,44 +180,35 @@ void AHBot_AuctionHouseScript::OnAuctionRemove(AuctionHouseObject* /*ah*/, Aucti
         }
     }
 
-    //
-    // Verify if we can operate on the item
-    //
-
-    Item* pItem = sAuctionMgr->GetAItem(auction->item_guid);
-
-    if (!pItem)
-    {
-        if (config->DebugOut)
-        {
-            LOG_ERROR("module", "AHBot: Item {} doesn't exist, perhaps bought already?", auction->item_guid.ToString());
-        }
-
-        return;
-    }
-
-    //
-    // Decrements
-    //
-
+    // only get the prototype as actual item has already been removed from server AH in this callback
     ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(auction->item_template);
 
-    if (config->DebugOut)
+    if (prototype)
     {
-        LOG_INFO("module", "AHBot: ah={}, item={}, count={}", auction->GetHouseId(), auction->item_template, config->GetItemCounts(prototype->Quality));
+        config->DecItemCounts(prototype->Class, prototype->Quality);
+        if (config->DebugOut)
+        {
+            LOG_INFO("module", "AHBot: Auction removed ah={}, auctionId={}, Bot totalAHItems={}", AuctionHouseId(ahEntry->houseId), auction->Id, config->TotalItemCounts());
+        }
     }
-
-    config->DecItemCounts(prototype->Class, prototype->Quality);
+    else
+    {
+        // should never happen
+        if (config->DebugOut)
+        {
+            LOG_ERROR("module", "AHBot: Item was removed but no prototype was found");
+        }
+    }
 }
 
 void AHBot_AuctionHouseScript::OnAuctionSuccessful(AuctionHouseObject* /*ah*/, AuctionEntry* auction)
 {
-    // 
+    //
     // Get the configuration for the auction house
-    // 
+    //
 
     AuctionHouseEntry const* ahEntry = sAuctionMgr->GetAuctionHouseEntryFromHouse(auction->GetHouseId());
-    AHBConfig*               config  = gNeutralConfig;
+    AHBConfig* config = gNeutralConfig;
 
     if (ahEntry)
     {
@@ -225,22 +222,33 @@ void AHBot_AuctionHouseScript::OnAuctionSuccessful(AuctionHouseObject* /*ah*/, A
         }
     }
 
-    // 
+    //
     // If the auction has been won, it means that it has been accepted by the market.
     // Use the buyout as a reference since the price for the bid is downgraded during selling.
-    // 
+    //
+
+    if (config->DebugOut)
+    {
+        LOG_INFO("module", "AHBot: Auction successful ah={}, auctionId={}, Bot totalAHItems={}", AuctionHouseId(ahEntry->houseId), auction->Id, config->TotalItemCounts());
+    }
 
     config->UpdateItemStats(auction->item_template, auction->itemCount, auction->buyout);
+
 }
 
 void AHBot_AuctionHouseScript::OnAuctionExpire(AuctionHouseObject* /*ah*/, AuctionEntry* auction)
 {
-    // 
+    //
     // Get the configuration for the auction house
-    // 
+    //
+
+    if (!auction)
+    {
+        LOG_ERROR("module", "AHBot: AHBot_AuctionHouseScript::OnAuctionExpire invalid AuctionEntry");
+    }
 
     AuctionHouseEntry const* ahEntry = sAuctionMgr->GetAuctionHouseEntryFromHouse(auction->GetHouseId());
-    AHBConfig*               config  = gNeutralConfig;
+    AHBConfig* config = gNeutralConfig;
 
     if (ahEntry)
     {
@@ -254,12 +262,17 @@ void AHBot_AuctionHouseScript::OnAuctionExpire(AuctionHouseObject* /*ah*/, Aucti
         }
     }
 
-    // 
+    //
     // If the auction expired, then it means that the bid was unwanted by the market.
     // Bid price is usually less or equal to the buyout, so this likely will bring the price down.
-    // 
+    //
 
     config->UpdateItemStats(auction->item_template, auction->itemCount, auction->bid);
+
+    if (config->DebugOut)
+    {
+        LOG_INFO("module", "AHBot: Auction Expired ah={}, auctionId={} Bot totalAHItems={}", AuctionHouseId(ahEntry->houseId), auction->Id, config->TotalItemCounts());
+    }
 }
 
 void AHBot_AuctionHouseScript::OnBeforeAuctionHouseMgrUpdate()

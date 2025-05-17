@@ -6,10 +6,11 @@
 <--------------------------------------------------------------------------->
 */
 
-#include "ScriptMgr.h"
+#include "Chat.h"
+#include "DBCStores.h"
 #include "Player.h"
 #include "ScriptedGossip.h"
-#include "DBCStores.h"
+#include "ScriptMgr.h"
 
 enum eTitles
 {
@@ -144,21 +145,19 @@ public:
         if (player->HasItemCount(token, quantity, true))
         {
             if (player->HasTitle(title))
-            {
-                player->GetSession()->SendNotification("|cffe84118[ERRO] \n |cfff5f6faYou can not buy titles you already own.");
-            }
+                ChatHandler(player->GetSession()).SendNotification("|cffe84118[ERRO] \n |cfff5f6faYou can not buy titles you already own.");
             else
             {
                 CharTitlesEntry const *titleInfo = sCharTitlesStore.LookupEntry(title);
                 player->SetTitle(titleInfo, false);
                 player->DestroyItemCount(token, quantity, true, false);
-                player->GetSession()->SendNotification("|cff44bd32Congratulations! \n |cfff5f6faTitle successfully purchased.");
+                ChatHandler(player->GetSession()).SendNotification("|cff44bd32Congratulations! \n |cfff5f6faTitle successfully purchased.");
             }
             player->PlayerTalkClass->SendCloseGossip();
         }
         else
         {
-            player->GetSession()->SendNotification("|cffe84118[ERRO] \n |cfff5f6faYou do not have enough tokens.");
+            ChatHandler(player->GetSession()).SendNotification("|cffe84118[ERRO] \n |cfff5f6faYou do not have enough tokens.");
             player->PlayerTalkClass->SendCloseGossip();
         }
     }

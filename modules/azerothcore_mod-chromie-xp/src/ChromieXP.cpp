@@ -37,23 +37,17 @@ bool canUnlockExp(Player* player)
 {
     // If the player level is equal or higher than the CHROMIE_BETA_CAP, do NOT allow
     if (player->GetLevel() >= CHROMIE_BETA_CAP)
-    {
         return false;
-    }
 
     // If the player level is lower than CHROMIE_STABLE_CAP, allow to unlock exp
     if (player->GetLevel() < CHROMIE_STABLE_CAP)
-    {
         return true;
-    }
 
     // Otherwise, allow only if the player is BETA TESTER
     auto result = CharacterDatabase.Query(SELECT_TESTER_QUERY, player->GetGUID().GetCounter());
 
     if (!result)
-    {
         return false;
-    }
 
     return result->GetRowCount() > 0;
 }
@@ -99,9 +93,7 @@ public:
         if (doSwitch)
         {
             if (!player->HasEnoughMoney(toggleXpCost))
-            {
                 player->SendBuyError(BUY_ERR_NOT_ENOUGHT_MONEY, 0, 0, 0);
-            }
             else if (noXPGain)
             {
                 if (canUnlockExp(player))
@@ -127,17 +119,18 @@ public:
 class AutoLockExp: public PlayerScript
 {
 public:
-    AutoLockExp() : PlayerScript("auto_lock_exp") {}
+    AutoLockExp() : PlayerScript("auto_lock_exp", {
+        PLAYERHOOK_ON_LEVEL_CHANGED,
+        PLAYERHOOK_SHOULD_BE_REWARDED_WITH_MONEY_INSTEAD_OF_EXP
+    }) {}
 
-    void OnLevelChanged(Player* player, uint8 oldlevel) override
+    void OnPlayerLevelChanged(Player* player, uint8 oldlevel) override
     {
         if (oldlevel == CHROMIE_STABLE_CAP - 1 || oldlevel == CHROMIE_BETA_CAP - 1)
-        {
             player->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-        }
     }
 
-    bool ShouldBeRewardedWithMoneyInsteadOfExp(Player* player) override
+    bool OnPlayerShouldBeRewardedWithMoneyInsteadOfExp(Player* player) override
     {
         // NOTE: this is in order to reward the Player with money instead of exp
         // even if the player has not reached the global server cap
@@ -197,9 +190,7 @@ public:
         }
 
         if (canUnlockExp(player))
-        {
             player->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-        }
         else if (player->GetLevel() < CHROMIE_BETA_CAP)
         {
             handler->PSendSysMessage(TEXT_ONLY_TESTERS_ALLOWED);
@@ -214,9 +205,7 @@ public:
         auto player = handler->GetSession()->GetPlayer();
 
         if (!player)
-        {
             return false;
-        }
 
         player->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
         return true;
@@ -227,9 +216,7 @@ public:
         auto player = handler->GetSession()->GetPlayer();
 
         if (!player)
-        {
             return false;
-        }
 
         if (player->GetLevel() < CHROMIE_STABLE_CAP)
         {
@@ -248,16 +235,13 @@ public:
         CharacterDatabase.Query(INSERT_TESTER_QUERY, player->GetGUID().GetCounter(), player->GetName());
 
         if (player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN))
-        {
             player->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-        }
 
         handler->PSendSysMessage(TEXT_TESTER_SUCCESS);
 
         return true;
     }
 };
-
 
 void AddChromieXpScripts()
 {

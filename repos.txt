@@ -6,7 +6,7 @@ https://github.com/Gozzim/mod-npc-spectator
 https://github.com/Gozzim/mod-starting-pet
 https://github.com/Helias/mod-bg-slaveryvalley
 https://github.com/Nyeriah/mod-black-portal
-https://github.com/Nyeriah/mod-instanced-worldbosses
+https://github.com/azerothcore/mod-instanced-worldbosses
 https://github.com/Nyeriah/mod-pvp-titles
 https://github.com/Nyeriah/mod-save-inventory
 https://github.com/Winfidonarleyan/kargatum-system
@@ -135,6 +135,7 @@ https://github.com/ornfelt/mod-solocraft
 https://github.com/pangolp/mod-recruit-friend
 https://github.com/trickerer/mod-autobalance
 https://github.com/whipowill/wow-addon-playerbots
+https://github.com/DustinHendrickson/mod-ollama-chat
 
 # other
-https://github.com/azerothcore/AzerothCore-Module-Installer
+https://github.com/stoudtlr/AzerothCore-Module-Installer

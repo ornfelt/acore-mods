@@ -150,7 +150,7 @@ class PVPTitles : public PlayerScript
 public:
     PVPTitles() : PlayerScript("PVPTitles") { }
 
-    void OnLogin(Player *player) override
+    void OnPlayerLogin(Player *player) override
     {
         if (sConfigMgr->GetOption<bool>("PvPTitles.Enable", false))
         {
@@ -171,7 +171,7 @@ public:
         }
     }
 
-    void OnPVPKill(Player* killer, Player* killed) override
+    void OnPlayerPVPKill(Player* killer, Player* killed) override
     {
         if (sConfigMgr->GetOption<bool>("PvPTitles.Enable", false))
         {

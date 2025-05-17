@@ -1,10 +1,10 @@
 #include "Configuration/Config.h"
 #include "Player.h"
 #include "ScriptMgr.h"
-#include <iostream>
-#include <iomanip>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 
 using std::stringstream;
 using std::ifstream;
@@ -17,7 +17,9 @@ public:
     bool loggingEnabled = sConfigMgr->GetOption<bool>("KillDetailedLogging.enabled", true);
     int logDumpSize = sConfigMgr->GetOption<int>("KillDetailedLogging.dumpSize", 0);
 
-    DeathStatTracker() : PlayerScript("DeathStatTracker")
+    DeathStatTracker() : PlayerScript("DeathStatTracker", {
+        PLAYERHOOK_ON_PLAYER_KILLED_BY_CREATURE
+    })
     {
         ifstream ifile("deaths.log");
         if (!ifile)

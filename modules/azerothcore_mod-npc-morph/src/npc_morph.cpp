@@ -1,6 +1,6 @@
-#include "ScriptMgr.h"
-#include "ScriptedGossip.h"
 #include "Player.h"
+#include "ScriptedGossip.h"
+#include "ScriptMgr.h"
 
 #define MSG_GOSSIP_TEXT_GETTING_STARTED "Welcome to AzerothCore morph service!"
 
@@ -20,7 +20,7 @@ class npc_morph : public CreatureScript
 public: 
     npc_morph() : CreatureScript("npc_morph") { }
 
-    bool OnGossipHello(Player* player, Creature* creature)
+    bool OnGossipHello(Player* player, Creature* creature) override
     {
         ClearGossipMenuFor(player);
         AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, MSG_GOSSIP_TEXT_MORTH_GNOME_MALE, GOSSIP_SENDER_MAIN, 2);
@@ -35,7 +35,7 @@ public:
         return true;
     }
 
-    bool OnGossipSelect(Player* player, Creature* creature, uint32 /*sender*/, uint32 action)
+    bool OnGossipSelect(Player* player, Creature* creature, uint32 /*sender*/, uint32 action) override
     {
         if (!player->getAttackers().empty())
         {

@@ -38,7 +38,7 @@ public:
         return &instance;
     }
 
-    uint32 OnGiveXP(Player* player, uint32 originalAmount, uint8 xpSource) const
+    uint32 OnPlayerGiveXP(Player* player, uint32 originalAmount, uint8 xpSource) const
     {
         if (!IsEventActive())
         {
@@ -59,7 +59,7 @@ public:
         return (uint32) newAmount;
     }
 
-    void OnLogin(Player* player, ChatHandler* handler) const
+    void OnPlayerLogin(Player* player, ChatHandler* handler) const
     {
         // TODO I am assuming that this is always called when a character logs in...
         // if that is not the case, thing migh get weird... Adding some asserts or warnings would be nice
@@ -280,19 +280,22 @@ public:
 class DoubleXpWeekendPlayerScript : public PlayerScript
 {
 public:
-    DoubleXpWeekendPlayerScript() : PlayerScript("DoubleXpWeekend") { }
+    DoubleXpWeekendPlayerScript() : PlayerScript("DoubleXpWeekend", {
+        PLAYERHOOK_ON_LOGIN,
+        PLAYERHOOK_ON_GIVE_EXP
+    }) { }
 
-    void OnLogin(Player* player) override
+    void OnPlayerLogin(Player* player) override
     {
         DoubleXpWeekend* mod = DoubleXpWeekend::instance();
         ChatHandler handler = ChatHandler(player->GetSession());
-        mod->OnLogin(player, &handler);
+        mod->OnPlayerLogin(player, &handler);
     }
 
-    void OnGiveXP(Player* player, uint32& amount, Unit* /*victim*/, uint8 xpSource) override
+    void OnPlayerGiveXP(Player* player, uint32& amount, Unit* /*victim*/, uint8 xpSource) override
     {
         DoubleXpWeekend* mod = DoubleXpWeekend::instance();
-        amount = mod->OnGiveXP(player, amount, xpSource);
+        amount = mod->OnPlayerGiveXP(player, amount, xpSource);
     }
 
 };

@@ -1,9 +1,10 @@
+#include "npc_talent_template.h"
+
 #include "Chat.h"
-#include "Creature.h"
 #include "Config.h"
+#include "Creature.h"
 #include "ReputationMgr.h"
 #include "ScriptedGossip.h"
-#include "npc_talent_template.h"
 
 #define DEFAULT_GOSSIP_ACTION_ENTRY 9999 // default value for gossipAction when creating new template
 
@@ -473,7 +474,7 @@ class npc_talent_template : public CreatureScript
 public:
     npc_talent_template() : CreatureScript("npc_talent_template") {}
 
-    bool OnGossipHello(Player* player, Creature* creature)
+    bool OnGossipHello(Player* player, Creature* creature) override
     {
         for (auto const& indexTemplate : sTemplateNpcMgr->indexContainer)
             if (indexTemplate->playerClass == sTemplateNpcMgr->GetClassString(player).c_str() && (indexTemplate->minLevel <= player->GetLevel() && player->GetLevel() <= indexTemplate->maxLevel))
@@ -485,22 +486,22 @@ public:
 
         if (sTemplateNpcMgr->enableResetTalents)
         {
-            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cff00ff00|TInterface\\icons\\Trade_Engineering:30:30|t|r Reset Talents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_RESET_TALENTS);
+            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cff00ff00|TInterface\\icons\\Trade_Engineering:30:30|t|r Reset Talents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_RESET_TALENTS, "Are you sure you want to reset your talents?", 0, false);
             if (player->getClass() == CLASS_HUNTER)
-                AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cff00ff00|TInterface\\icons\\ability_hunter_beasttaming:30:30|t|r Reset Pet Talents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_RESET_PET_TALENTS);
+                AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cff00ff00|TInterface\\icons\\ability_hunter_beasttaming:30:30|t|r Reset Pet Talents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_RESET_PET_TALENTS, "Are you sure you want to reset your pet's talents?", 0, false);
         }
 
         if (sTemplateNpcMgr->enableRemoveAllGlyphs)
-            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cff00ff00|TInterface\\icons\\Spell_ChargeNegative:30|t|r Remove all glyphs", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_RESET_REMOVE_GLYPHS);
+            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cff00ff00|TInterface\\icons\\Spell_ChargeNegative:30|t|r Remove all glyphs", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_RESET_REMOVE_GLYPHS, "Are you sure you want to remove all your glyphs?", 0, false);
 
         if (sTemplateNpcMgr->enableDestroyEquippedGear)
-            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cff00ff00|TInterface\\icons\\ability_vehicle_launchplayer:30|t|r Destroy my equipped gear", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_RESET_REMOVE_EQUIPPED_GEAR);
+            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cff00ff00|TInterface\\icons\\ability_vehicle_launchplayer:30|t|r Destroy my equipped gear", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_RESET_REMOVE_EQUIPPED_GEAR, "Are you sure you want to destroy all your equipped gear?", 0, false);
 
         SendGossipMenuFor(player, creature->GetEntry(), creature->GetGUID());
         return true;
     }
 
-    bool OnGossipSelect(Player* player, Creature* creature, uint32 /*uiSender*/, uint32 uiAction)
+    bool OnGossipSelect(Player* player, Creature* creature, uint32 /*uiSender*/, uint32 uiAction) override
     {
         if (!player || !creature)
             return false;
@@ -619,7 +620,10 @@ public:
 class npc_talent_template_world : public WorldScript
 {
 public:
-    npc_talent_template_world() : WorldScript("npc_talent_template_world") {}
+    npc_talent_template_world() : WorldScript("npc_talent_template_world", {
+        WORLDHOOK_ON_AFTER_CONFIG_LOAD,
+        WORLDHOOK_ON_STARTUP
+    }) {}
 
     void OnAfterConfigLoad(bool /*reload*/) override
     {

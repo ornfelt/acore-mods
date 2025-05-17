@@ -1,10 +1,11 @@
-#include "ScriptMgr.h"
 #include "Chat.h"
-#include "Player.h"
-#include "Pet.h"
-#include "Language.h"
 #include "Config.h"
+#include "Language.h"
+#include "Pet.h"
+#include "Player.h"
+#include "ScriptMgr.h"
 #include "World.h"
+#include "WorldSessionMgr.h"
 
 using namespace Acore::ChatCommands;
 
@@ -31,9 +32,9 @@ public:
         if (!displayId)
             return false;
 
-        SessionMap const& m_sessions = sWorld->GetAllSessions();
+        WorldSessionMgr::SessionMap const& m_sessions = sWorldSessionMgr->GetAllSessions();
 
-        for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+        for (WorldSessionMgr::SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
         {
             if (!itr->second || !itr->second->GetPlayer() || !itr->second->GetPlayer()->IsInWorld())
                 continue;
@@ -50,9 +51,9 @@ public:
 
     static bool HandleDeMorphAllCommand(ChatHandler* /*handler*/)
     {
-        SessionMap const& m_sessions = sWorld->GetAllSessions();
+        WorldSessionMgr::SessionMap const& m_sessions = sWorldSessionMgr->GetAllSessions();
 
-        for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+        for (WorldSessionMgr::SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
         {
             if (!itr->second || !itr->second->GetPlayer() || !itr->second->GetPlayer()->IsInWorld())
                 continue;
@@ -67,7 +68,10 @@ public:
 class MorphAllCommandWorldScript : public WorldScript
 {
 public:
-    MorphAllCommandWorldScript() : WorldScript("MorphAllCommandWorldScript") { }
+    MorphAllCommandWorldScript() : WorldScript("MorphAllCommandWorldScript", {
+        WORLDHOOK_ON_STARTUP,
+        WORLDHOOK_ON_AFTER_CONFIG_LOAD
+    }) { }
 
     void OnStartup() override
     {
@@ -80,7 +84,7 @@ public:
         if (reload)
         {
             sLog->outMessage("server", LOG_LEVEL_INFO, "== Re-Loaded morph_all_command ==");
-            sWorld->SendGMText(40000);
+            ChatHandler(nullptr).SendGMText(40000);
         }
     }
 };

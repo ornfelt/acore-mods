@@ -5,15 +5,15 @@
 #ifndef __AB_CONFIG_H
 #define __AB_CONFIG_H
 
-#include <list>
-#include <map>
-
-#include "SharedDefines.h"
-
 #include "ABInflectionPointSettings.h"
 #include "ABLevelScalingDynamicLevelSettings.h"
 #include "ABStatModifiers.h"
 #include "AutoBalance.h"
+
+#include "SharedDefines.h"
+
+#include <list>
+#include <map>
 
 extern std::map<uint32, AutoBalanceInflectionPointSettings>          dungeonOverrides;
 extern std::map<uint32, AutoBalanceInflectionPointSettings>          bossOverrides;
@@ -28,6 +28,8 @@ extern std::list<uint32>                                             disabledDun
 
 extern uint32                                                        minPlayersNormal;
 extern uint32                                                        minPlayersHeroic;
+extern uint32                                                        minPlayersRaid;
+extern uint32                                                        minPlayersRaidHeroic;
 extern std::map<uint32, uint8>                                       minPlayersPerDungeonIdMap;
 extern std::map<uint32, uint8>                                       minPlayersPerHeroicDungeonIdMap;
 

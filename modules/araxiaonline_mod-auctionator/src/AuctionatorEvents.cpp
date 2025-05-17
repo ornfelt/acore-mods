@@ -148,28 +148,28 @@ void AuctionatorEvents::SetHouses(AuctionatorHouses* auctionatorHouses)
 void AuctionatorEvents::EventAllianceBidder()
 {
     logInfo("Starting Alliance Bidder");
-    AuctionatorBidder bidder = AuctionatorBidder(AUCTIONHOUSE_ALLIANCE, auctionatorGuid, config);
+    AuctionatorBidder bidder = AuctionatorBidder((uint32)AuctionHouseId::Alliance, auctionatorGuid, config);
     bidder.SpendSomeCash();
 }
 
 void AuctionatorEvents::EventHordeBidder()
 {
     logInfo("Starting Horde Bidder");
-    AuctionatorBidder bidder = AuctionatorBidder(AUCTIONHOUSE_HORDE, auctionatorGuid, config);
+    AuctionatorBidder bidder = AuctionatorBidder((uint32)AuctionHouseId::Horde, auctionatorGuid, config);
     bidder.SpendSomeCash();
 }
 
 void AuctionatorEvents::EventNeutralBidder()
 {
     logInfo("Starting Neutral Bidder");
-    AuctionatorBidder bidder = AuctionatorBidder(AUCTIONHOUSE_NEUTRAL, auctionatorGuid, config);
+    AuctionatorBidder bidder = AuctionatorBidder((uint32)AuctionHouseId::Neutral, auctionatorGuid, config);
     bidder.SpendSomeCash();
 }
 
 void AuctionatorEvents::EventAllianceSeller()
 {
     AuctionatorSeller sellerAlliance =
-        AuctionatorSeller(gAuctionator, static_cast<uint32>(AUCTIONHOUSE_ALLIANCE));
+        AuctionatorSeller(gAuctionator, static_cast<uint32>(AuctionHouseId::Alliance));
 
     uint32 auctionCountAlliance = houses->AllianceAh->Getcount();
 
@@ -182,7 +182,7 @@ void AuctionatorEvents::EventAllianceSeller()
 
         sellerAlliance.LetsGetToIt(
             config->sellerConfig.auctionsPerRun,
-            AUCTIONHOUSE_ALLIANCE
+            (uint32)AuctionHouseId::Alliance
         );
     } else {
         logInfo("Alliance count over max: " + std::to_string(auctionCountAlliance));
@@ -193,7 +193,7 @@ void AuctionatorEvents::EventAllianceSeller()
 void AuctionatorEvents::EventHordeSeller()
 {
     AuctionatorSeller sellerHorde =
-        AuctionatorSeller(gAuctionator, static_cast<uint32>(AUCTIONHOUSE_HORDE));
+        AuctionatorSeller(gAuctionator, static_cast<uint32>(AuctionHouseId::Horde));
 
     uint32 auctionCountHorde = houses->HordeAh->Getcount();
 
@@ -206,7 +206,7 @@ void AuctionatorEvents::EventHordeSeller()
 
         sellerHorde.LetsGetToIt(
             config->sellerConfig.auctionsPerRun,
-            AUCTIONHOUSE_HORDE
+            (uint32)AuctionHouseId::Horde
         );
     } else {
         logInfo("Horde count over max: " + std::to_string(auctionCountHorde));
@@ -216,7 +216,7 @@ void AuctionatorEvents::EventHordeSeller()
 void AuctionatorEvents::EventNeutralSeller()
 {
     AuctionatorSeller sellerNeutral =
-        AuctionatorSeller(gAuctionator, static_cast<uint32>(AUCTIONHOUSE_NEUTRAL));
+        AuctionatorSeller(gAuctionator, static_cast<uint32>(AuctionHouseId::Neutral));
 
     uint32 auctionCountNeutral = houses->NeutralAh->Getcount();
 
@@ -229,7 +229,7 @@ void AuctionatorEvents::EventNeutralSeller()
 
         sellerNeutral.LetsGetToIt(
             config->sellerConfig.auctionsPerRun,
-            AUCTIONHOUSE_NEUTRAL
+            (uint32)AuctionHouseId::Neutral
         );
 
     } else {

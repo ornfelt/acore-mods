@@ -45,6 +45,10 @@ void ZoneDifficulty::LoadMapDifficultySettings()
     NerfInfo[DUEL_INDEX][0].AbsorbNerfPct = 1;
     NerfInfo[DUEL_INDEX][0].MeleeDamageBuffPct = 1;
     NerfInfo[DUEL_INDEX][0].SpellDamageBuffPct = 1;
+    NerfInfo[DUEL_INDEX][0].HealingNerfPctHard = 1;
+    NerfInfo[DUEL_INDEX][0].AbsorbNerfPctHard = 1;
+    NerfInfo[DUEL_INDEX][0].MeleeDamageBuffPctHard = 1;
+    NerfInfo[DUEL_INDEX][0].SpellDamageBuffPctHard = 1;
 
     // Heroic Quest -> MapId Translation
     HeroicTBCQuestMapList[542] = 11362; // Blood Furnace
@@ -93,8 +97,14 @@ void ZoneDifficulty::LoadMapDifficultySettings()
     // Category 11
     EncounterCounter[564] = 9; // Black Temple
 
+    // Category 12
+    EncounterCounter[568] = 6; // Zul'Aman
+
     // Category 18
     EncounterCounter[534] = 5; // Hyjal Summit
+
+    // Category 19
+    EncounterCounter[580] = 6; // Sunwell Plateau
 
     // Icons
     sZoneDifficulty->ItemIcons[ITEMTYPE_MISC] = "|TInterface\\icons\\inv_misc_cape_17:15|t |TInterface\\icons\\inv_misc_gem_topaz_02:15|t |TInterface\\icons\\inv_jewelry_ring_51naxxramas:15|t ";
@@ -120,7 +130,11 @@ void ZoneDifficulty::LoadMapDifficultySettings()
                 data.MeleeDamageBuffPct = (*result)[4].Get<float>();
                 data.SpellDamageBuffPct = (*result)[5].Get<float>();
                 data.Enabled = data.Enabled | mode;
-                sZoneDifficulty->NerfInfo[mapId][phaseMask] = data;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].HealingNerfPct = data.HealingNerfPct;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].AbsorbNerfPct = data.AbsorbNerfPct;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].MeleeDamageBuffPct = data.MeleeDamageBuffPct;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].SpellDamageBuffPct = data.SpellDamageBuffPct;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].Enabled |= mode;
             }
             if (sZoneDifficulty->HasMythicmode(mode) && sZoneDifficulty->MythicmodeEnable)
             {
@@ -129,7 +143,11 @@ void ZoneDifficulty::LoadMapDifficultySettings()
                 data.MeleeDamageBuffPctHard = (*result)[4].Get<float>();
                 data.SpellDamageBuffPctHard = (*result)[5].Get<float>();
                 data.Enabled = data.Enabled | mode;
-                sZoneDifficulty->NerfInfo[mapId][phaseMask] = data;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].HealingNerfPctHard = data.HealingNerfPctHard;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].AbsorbNerfPctHard = data.AbsorbNerfPctHard;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].MeleeDamageBuffPctHard = data.MeleeDamageBuffPctHard;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].SpellDamageBuffPctHard = data.SpellDamageBuffPctHard;
+                sZoneDifficulty->NerfInfo[mapId][phaseMask].Enabled |= mode;
             }
             if ((mode & MODE_HARD) != MODE_HARD && (mode & MODE_NORMAL) != MODE_NORMAL)
             {
@@ -542,6 +560,9 @@ std::string ZoneDifficulty::GetContentTypeString(uint32 type)
     case TYPE_RAID_HYJAL:
         typestring = "for Battle for Mount Hyjal.";
         break;
+    case TYPE_RAID_SWP:
+        typestring = "for Sunwell Plateau.";
+        break;
     default:
         typestring = "-";
     }
@@ -948,6 +969,9 @@ bool ZoneDifficulty::HasCompletedFullTier(uint32 category, uint32 playerGuid)
     case TYPE_RAID_HYJAL:
         MapList = { 534 };
         break;
+    case TYPE_RAID_SWP:
+        MapList = { 580 };
+        break;
     default:
         LOG_ERROR("module", "MOD-ZONE-DIFFICULTY: Category without data requested in ZoneDifficulty::HasCompletedFullTier {}", category);
         return false;
@@ -1039,6 +1063,26 @@ void ZoneDifficulty::LogAndAnnounceKill(Map* map, bool isMythic)
         });
 
         ChatHandler(nullptr).SendWorldText(names.c_str());
+    } else if (map->GetId() == 580)
+    {
+        if (sZoneDifficulty->IsSunwellPlateauDone)
+            return;
+
+        sZoneDifficulty->IsSunwellPlateauDone = true;
+
+        ChatHandler(nullptr).SendWorldText("Congrats on conquering Sunwell Plateau ({}) and defeating Kil'jaeden! Well done, champions!", isMythic ? "Mythic" : "Normal");
+
+        std::string names = "Realm first group: ";
+
+        map->DoForAllPlayers([&](Player* mapPlayer) {
+            if (!mapPlayer->IsGameMaster())
+            {
+                names.append(mapPlayer->GetName() + ", ");
+                CharacterDatabase.Execute("INSERT INTO zone_difficulty_completion_logs (guid, type, mode) VALUES ({}, {}, {})", mapPlayer->GetGUID().GetCounter(), TYPE_RAID_SWP, 1);
+            }
+        });
+
+        ChatHandler(nullptr).SendWorldText(names.c_str());
     }
 };
 
@@ -1074,6 +1118,14 @@ bool ZoneDifficulty::CheckCompletionStatus(Creature* creature, Player* player, u
             if (!player->GetPlayerSetting(ModZoneDifficultyString + "ct", SETTING_HYJAL).value)
             {
                 creature->Whisper("Ah, hero! The threads of fate bring you to me. To claim the rewards you desire, you must first confront Archimonde on Mythic difficulty.",
+                    LANG_UNIVERSAL, player);
+                return false;
+            }
+            break;
+        case TYPE_RAID_SWP:
+            if (!player->GetPlayerSetting(ModZoneDifficultyString + "ct", SETTING_SWP).value)
+            {
+                creature->Whisper("Ah, hero! The threads of fate bring you to me. To claim the rewards you desire, you must first confront Kil'jaeden on Mythic difficulty.",
                     LANG_UNIVERSAL, player);
                 return false;
             }
@@ -1116,6 +1168,14 @@ void ZoneDifficulty::ProcessCreatureDeath(Map* map, uint32 entry)
             {
                 player->UpdatePlayerSetting(ModZoneDifficultyString + "ct", SETTING_SSC, 1);
                 player->SendSystemMessage("Congratulations on completing Serpentshrine Cavern!");
+            });
+            sZoneDifficulty->LogAndAnnounceKill(map, true);
+            break;
+        case NPC_KILJAEDEN:
+            map->DoForAllPlayers([&](Player* player)
+            {
+                player->UpdatePlayerSetting(ModZoneDifficultyString + "ct", SETTING_SWP, 1);
+                player->SendSystemMessage("Congratulations on completing Sunwell Plateau!");
             });
             sZoneDifficulty->LogAndAnnounceKill(map, true);
             break;

@@ -1,10 +1,10 @@
 #include "Configuration/Config.h"
 #include "Player.h"
 #include "ScriptMgr.h"
-#include <iostream>
-#include <iomanip>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 
 using std::stringstream;
 using std::ifstream;
@@ -17,7 +17,10 @@ public:
     bool loggingEnabled = sConfigMgr->GetOption<bool>("KillDetailedLogging.enabled", true);
     int logDumpSize = sConfigMgr->GetOption<int>("KillDetailedLogging.dumpSize", 0);
 
-    KillStatTracker() : PlayerScript("KillStatTracker")
+    KillStatTracker() : PlayerScript("KillStatTracker", {
+        PLAYERHOOK_ON_CREATURE_KILL,
+        PLAYERHOOK_ON_CREATURE_KILLED_BY_PET
+    })
     {
         // If the file doesn't exist we will create it and add the appropriate headers
 
@@ -30,8 +33,8 @@ public:
 
     }
 
-    void OnCreatureKill(Player* player, Creature* creature) override;
-    void OnCreatureKilledByPet(Player* player, Creature* creature) override;
+    void OnPlayerCreatureKill(Player* player, Creature* creature) override;
+    void OnPlayerCreatureKilledByPet(Player* player, Creature* creature) override;
 
 private:
     int insertCount = 0;

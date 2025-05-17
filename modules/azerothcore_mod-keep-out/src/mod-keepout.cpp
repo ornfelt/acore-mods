@@ -1,11 +1,11 @@
-#include "Configuration/Config.h"
-#include "Player.h"
-#include "Creature.h"
 #include "AccountMgr.h"
-#include "ScriptMgr.h"
+#include "Chat.h"
+#include "Configuration/Config.h"
+#include "Creature.h"
 #include "Define.h"
 #include "GossipDef.h"
-#include "Chat.h"
+#include "Player.h"
+#include "ScriptMgr.h"
 
 struct MKO
 {
@@ -55,9 +55,7 @@ void checkZoneKeepOut(Player* player)
         CharacterDatabase.Execute("INSERT INTO `mod_mko_map_exploit` (`accountId`, `count`) VALUES ({}, {})", accountId, countWarnings);
 
         if (mko.teleportEnabled)
-        {
             teleportPlayer(player);
-        }
     }
     else
     {
@@ -71,17 +69,11 @@ void checkZoneKeepOut(Player* player)
         else
         {
             if (mko.teleportEnabled && !mko.kickEnabled)
-            {
                 teleportPlayer(player);
-            }
             else if (mko.kickEnabled)
-            {
                 player->GetSession()->KickPlayer("MKO: Entering a place not allowed.", true);
-            }
             else
-            {
                 ChatHandler(player->GetSession()).PSendSysMessage("You have gone to a forbidden place your actions have been logged.");
-            }
         }
     }
 }
@@ -89,29 +81,30 @@ void checkZoneKeepOut(Player* player)
 class KeepOutPlayerScript : public PlayerScript
 {
 public:
-    KeepOutPlayerScript() : PlayerScript("KeepOutPlayerScript") { }
+    KeepOutPlayerScript() : PlayerScript("KeepOutPlayerScript", {
+        PLAYERHOOK_ON_LOGIN,
+        PLAYERHOOK_ON_UPDATE_ZONE
+    }) { }
 
-    void OnLogin(Player* player) override
+    void OnPlayerLogin(Player* player) override
     {
         if (sConfigMgr->GetOption<bool>("Announcer.Enable", true))
-        {
             ChatHandler(player->GetSession()).PSendSysMessage("This server is running the |cff4CFF00Keep Out |rmodule.");
-        }
     }
 
-    void OnUpdateZone(Player* player, uint32 /*newZone*/,  uint32 /*newArea*/) override
+    void OnPlayerUpdateZone(Player* player, uint32 /*newZone*/,  uint32 /*newArea*/) override
     {
         if (mko.keepOutEnabled)
-        {
             checkZoneKeepOut(player);
-        }
     }
 };
 
 class KeepOutWorldScript : public WorldScript
 {
 public:
-    KeepOutWorldScript() : WorldScript("KeepOutWorldScript") { }
+    KeepOutWorldScript() : WorldScript("KeepOutWorldScript", {
+        WORLDHOOK_ON_BEFORE_CONFIG_LOAD
+    }) { }
 
     void OnBeforeConfigLoad(bool reload) override
     {

@@ -1,32 +1,32 @@
 //by SymbolixDEV
 //Reworked by Talamortis
-#include "ScriptMgr.h"
+#include "Chat.h"
 #include "Config.h"
-#include <Player.h>
 #include "Group.h"
 #include "GroupMgr.h"
 #include "InstanceScript.h"
-#include "Chat.h"
+#include "Player.h"
+#include "ScriptMgr.h"
+#include "WorldSessionMgr.h"
 
 static bool removeAura, BossAnnouncerEnable, BossAnnounceToPlayerOnLogin;
 
 class Boss_Announcer : public PlayerScript
 {
 public:
-	Boss_Announcer() : PlayerScript("Boss_Announcer") {}
+	Boss_Announcer() : PlayerScript("Boss_Announcer", {
+        PLAYERHOOK_ON_LOGIN,
+        PLAYERHOOK_ON_CREATURE_KILL
+    }) {}
 
-    void OnLogin(Player *player)
+    void OnPlayerLogin(Player *player)
     {
         if (BossAnnouncerEnable)
-        {
             if (BossAnnounceToPlayerOnLogin)
-            {
-                ChatHandler(player->GetSession()).SendSysMessage("This server is running the |cff4CFF00BossAnnouncer |rmodule.");
-            }
-        }
+               ChatHandler(player->GetSession()).SendSysMessage("This server is running the |cff4CFF00BossAnnouncer |rmodule.");
     }
 
-    void OnCreatureKill(Player* player, Creature* boss)
+    void OnPlayerCreatureKill(Player* player, Creature* boss)
     {
         if (BossAnnouncerEnable)
         {
@@ -109,7 +109,7 @@ public:
 
                 stream << "|CFF" << tag_colour << "|r|cff" << plr_colour << " " << p_name << "|r's Guild |cff" << guild_colour << "" << g_name << "|r has slain |CFF" << boss_colour << "[" << boss_name << "]|r with remaining |cff" << alive_text << "" << Alive_players << " /" << IsNormal << "|r players alive on " << IsHeroicMode << " mode, possible group |cff" << tag_colour << "Tank: " << Tanks  <<"|r |cff" << guild_colour <<
                     " Healers: "<< Healers << "|r |cff" << boss_colour << " DPS: " << DPS << "|r";
-                sWorld->SendServerMessage(SERVER_MSG_STRING, stream.str().c_str());
+                sWorldSessionMgr->SendServerMessage(SERVER_MSG_STRING, stream.str().c_str());
 
 
             }
@@ -120,15 +120,16 @@ public:
 class Boss_Announcer_World : public WorldScript
 {
 public:
-	Boss_Announcer_World() : WorldScript("Boss_Announcer_World") { }
+	Boss_Announcer_World() : WorldScript("Boss_Announcer_World", {
+        WORLDHOOK_ON_BEFORE_CONFIG_LOAD
+    }) { }
 
 	void OnBeforeConfigLoad(bool reload) override
 	{
-		if (!reload) {
+		if (!reload)
             SetInitialWorldSettings();
-		}
 	}
-    void  SetInitialWorldSettings()
+    void SetInitialWorldSettings()
     {
         removeAura = sConfigMgr->GetOption<bool>("Boss.Announcer.RemoveAuraUponKill", false);
         BossAnnouncerEnable = sConfigMgr->GetOption<bool>("Boss.Announcer.Enable", true);

@@ -1,9 +1,10 @@
-#include "ScriptMgr.h"
+#include "Chat.h"
 #include "Configuration/Config.h"
 #include "GossipDef.h"
+#include "Language.h"
 #include "Player.h"
 #include "ScriptedGossip.h"
-#include "Language.h"
+#include "ScriptMgr.h"
 
 enum Actions
 {
@@ -93,9 +94,7 @@ public:
         }
 
         if (action == ACTION_NONE)
-        {
             return OnGossipHello(player, creature);
-        }
 
         // Player wants to get its emblems
         if (action == ACTION_RETRIEVE_EMBLEMS)
@@ -121,7 +120,7 @@ public:
 
                     if (amount == 0 || dest.empty())
                     {
-                        player->GetSession()->SendNotification(LANG_ITEM_CANNOT_CREATE, emblemId, noSpaceForCount);
+                        ChatHandler(player->GetSession()).SendNotification(LANG_ITEM_CANNOT_CREATE, emblemId, noSpaceForCount);
                         continue;
                     }
 
@@ -132,7 +131,7 @@ public:
                 } while (result->NextRow());
 
                 CharacterDatabase.Execute("UPDATE emblem_transferences SET active = 0, received_timestamp = CURRENT_TIMESTAMP WHERE receiver_guid = {} AND active = 1", player->GetSession()->GetGuidLow());
-                player->GetSession()->SendNotification("Thank you for using the emblem transfer service!");
+                ChatHandler(player->GetSession()).SendNotification("Thank you for using the emblem transfer service!");
                 return OnGossipSelect(player, creature, sender, ACTION_CLOSE);
             }
         }
@@ -175,7 +174,7 @@ public:
 
             if (emblems < minAmount)
             {
-                player->GetSession()->SendNotification("You don't have enough emblems! The minimum amount is %d", minAmount);
+                ChatHandler(player->GetSession()).SendNotification("You don't have enough emblems! The minimum amount is %d", minAmount);
                 return OnGossipSelect(player, creature, sender, ACTION_CLOSE);
             }
 
@@ -183,9 +182,7 @@ public:
         }
         // Player selected a character to transfer
         else
-        {
             AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "Last step: Amount of emblems", sender, action, "Enter the amount of emblems to transfer:", 0, true);
-        }
 
         SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
         return true;
@@ -196,7 +193,7 @@ public:
     {
         if (!isNumber(code))
         {
-            player->GetSession()->SendNotification("Please enter a valid number!");
+            ChatHandler(player->GetSession()).SendNotification("Please enter a valid number!");
             return OnGossipSelect(player, creature, sender, ACTION_CLOSE);
         }
 
@@ -234,14 +231,14 @@ public:
         // Deku: emblemId should NEVER be 0
         if (emblemId == 0)
         {
-            player->GetSession()->SendNotification("There was a problem processing your request. Please notify an administrator.");
+            ChatHandler(player->GetSession()).SendNotification("There was a problem processing your request. Please notify an administrator.");
             return OnGossipSelect(player, creature, sender, ACTION_CLOSE);
         }
 
         emblemsCount = player->GetItemCount(emblemId);
         if (emblemsCount < transferAmount)
         {
-            player->GetSession()->SendNotification("You don't have enough emblems!");
+            ChatHandler(player->GetSession()).SendNotification("You don't have enough emblems!");
             return OnGossipSelect(player, creature, sender, ACTION_CLOSE);
         }
 

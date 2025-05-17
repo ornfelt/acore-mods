@@ -153,6 +153,9 @@ azerothcore_mod-individual-xp [modules/azerothcore_mod-individual-xp](modules/az
 azerothcore_mod-instance-reset [modules/azerothcore_mod-instance-reset](modules/azerothcore_mod-instance-reset)
 
 
+azerothcore_mod-instanced-worldbosses [modules/azerothcore_mod-instanced-worldbosses](modules/azerothcore_mod-instanced-worldbosses)
+
+
 azerothcore_mod-ip-tracker [modules/azerothcore_mod-ip-tracker](modules/azerothcore_mod-ip-tracker)
 
 
@@ -348,6 +351,9 @@ bewarellamas_mod-dungeonmaster [modules/bewarellamas_mod-dungeonmaster](modules/
 bewarellamas_quest-customquestpack [modules/bewarellamas_quest-customquestpack](modules/bewarellamas_quest-customquestpack)
 
 
+DustinHendrickson_mod-ollama-chat [modules/DustinHendrickson_mod-ollama-chat](modules/DustinHendrickson_mod-ollama-chat)
+
+
 eyeofstorm_mod-npc-bots [modules/eyeofstorm_mod-npc-bots](modules/eyeofstorm_mod-npc-bots)
 
 
@@ -373,9 +379,6 @@ milestorme_mod-solo-lfg [modules/milestorme_mod-solo-lfg](modules/milestorme_mod
 
 
 Nyeriah_mod-black-portal [modules/Nyeriah_mod-black-portal](modules/Nyeriah_mod-black-portal)
-
-
-Nyeriah_mod-instanced-worldbosses [modules/Nyeriah_mod-instanced-worldbosses](modules/Nyeriah_mod-instanced-worldbosses)
 
 
 Nyeriah_mod-pvp-titles [modules/Nyeriah_mod-pvp-titles](modules/Nyeriah_mod-pvp-titles)
@@ -411,6 +414,6 @@ ZhengPeiRu21_mod-playerbots [modules/ZhengPeiRu21_mod-playerbots](modules/ZhengP
 ZhengPeiRu21_mod-reagent-bank [modules/ZhengPeiRu21_mod-reagent-bank](modules/ZhengPeiRu21_mod-reagent-bank)
 
 
-azerothcore_AzerothCore-Module-Installer [other/azerothcore_AzerothCore-Module-Installer](other/azerothcore_AzerothCore-Module-Installer)
+stoudtlr_AzerothCore-Module-Installer [other/stoudtlr_AzerothCore-Module-Installer](other/stoudtlr_AzerothCore-Module-Installer)
 
 

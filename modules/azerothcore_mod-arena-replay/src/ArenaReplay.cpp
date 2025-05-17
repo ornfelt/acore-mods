@@ -3,19 +3,19 @@
 //
 #include "ArenaReplayDatabaseConnection.h"
 #include "ArenaReplay_loader.h"
+#include "ArenaTeamMgr.h"
+#include "Base32.h"
 #include "Battleground.h"
 #include "BattlegroundMgr.h"
 #include "CharacterDatabase.h"
 #include "Chat.h"
+#include "Config.h"
 #include "Opcodes.h"
 #include "Player.h"
-#include "ScriptMgr.h"
 #include "ScriptedGossip.h"
-#include <unordered_map>
-#include "Base32.h"
-#include "Config.h"
-#include "ArenaTeamMgr.h"
+#include "ScriptMgr.h"
 #include <iomanip>
+#include <unordered_map>
 
 std::vector<Opcodes> watchList =
 {
@@ -100,7 +100,9 @@ std::unordered_map<uint32, BgPlayersGuids> bgPlayersGuids;
 class ArenaReplayServerScript : public ServerScript
 {
 public:
-    ArenaReplayServerScript() : ServerScript("ArenaReplayServerScript") {}
+    ArenaReplayServerScript() : ServerScript("ArenaReplayServerScript", {
+        SERVERHOOK_CAN_PACKET_SEND
+    }) {}
 
     bool CanPacketSend(WorldSession* session, WorldPacket& packet) override
     {
@@ -155,7 +157,9 @@ public:
 
 class ArenaReplayArenaScript : public ArenaScript {
 public:
-  ArenaReplayArenaScript() : ArenaScript("ArenaReplayArenaScript") {}
+  ArenaReplayArenaScript() : ArenaScript("ArenaReplayArenaScript", {
+      ARENAHOOK_ON_BEFORE_CHECK_WIN_CONDITION
+  }) {}
 
   bool OnBeforeArenaCheckWinConditions(Battleground *const bg) override {
     const bool isReplay = bgReplayIds.find(bg->GetInstanceID()) != bgReplayIds.end();
@@ -163,48 +167,16 @@ public:
     // if isReplay then return false to exit from check condition
     return !isReplay;
   }
-
-  /* WIP
-  void OnArenaStart(Battleground* bg) override
-  {
-      uint32 teamWinnerRating = 0;
-      uint32 teamLoserRating = 0;
-      uint32 teamWinnerMMR = 0;
-      uint32 teamLoserMMR = 0;
-      std::string teamWinnerName;
-      std::string teamLoserName;
-      std::string winnerGuids;
-      std::string loserGuids;
-
-      for (const auto& playerPair : bg->GetPlayers())
-      {
-          Player* player = playerPair.second;
-          if (player->IsSpectator())
-              return;
-
-          if (!player)
-              continue;
-
-          std::string playerGuid = std::to_string(player->GetGUID().GetRawValue());
-          TeamId bgTeamId = player->GetBgTeamId();
-          uint32 bgInstanceId = bg->GetInstanceID();
-          ArenaTeam* team = sArenaTeamMgr->GetArenaTeamById(bg->GetArenaTeamIdForTeam(bgTeamId));
-          uint32 arenaTeamId = bg->GetArenaTeamIdForTeam(bgTeamId);
-          TeamId teamId = static_cast<TeamId>(arenaTeamId);
-          uint32 teamMMR = bg->GetArenaMatchmakerRating(teamId);
-
-          //playerbgTeamIdMap[playerGuidCounter] = bgTeamId;
-          //playerArenaTeamMap[playerGuidCounter] = arenaTeamId;
-          //playerInstanceMap[playerGuidCounter] = bgInstanceId;
-
-      }
-  }*/
 };
 
 class ArenaReplayBGScript : public BGScript
 {
 public:
-    ArenaReplayBGScript() : BGScript("ArenaReplayBGScript") {}
+    ArenaReplayBGScript() : BGScript("ArenaReplayBGScript", {
+        ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_UPDATE,
+        ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_ADD_PLAYER,
+        ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_END
+    }) {}
 
     void OnBattlegroundUpdate(Battleground* bg, uint32 /* diff */) override
     {
@@ -359,7 +331,8 @@ public:
         std::string winnerGuids;
         std::string loserGuids;
 
-        if (winnerTeamId == TEAM_ALLIANCE) {
+        if (winnerTeamId == TEAM_ALLIANCE)
+        {
             winnerGuids = bgPlayersGuids[bg->GetInstanceID()].alliancePlayerGuids;
             loserGuids = bgPlayersGuids[bg->GetInstanceID()].hordePlayerGuids;
         }
@@ -407,7 +380,8 @@ public:
         }
 
         const uint8 ARENA_TYPE_3V3_SOLO_QUEUE = sConfigMgr->GetOption<uint8>("ArenaReplay.3v3soloQ.ArenaType", 4);
-        if (bg->isArena() && (!bg->isRated() || bg->GetArenaType() == ARENA_TYPE_3V3_SOLO_QUEUE)) {
+        if (bg->isArena() && (!bg->isRated() || bg->GetArenaType() == ARENA_TYPE_3V3_SOLO_QUEUE))
+        {
             teamWinnerName = GetTeamName(winnerGuids);
             teamLoserName = GetTeamName(loserGuids);
         }
@@ -639,20 +613,11 @@ public:
 
         // Forbidden: ', %, and , (' causes crash when using 'Replay list by player name')
         std::string inputCode = std::string(code);
-        if (inputCode.find('\'') != std::string::npos || inputCode.find('%') != std::string::npos || inputCode.find(',') != std::string::npos)
-        {
-            ChatHandler(player->GetSession()).PSendSysMessage("Invalid input.");
-            CloseGossipMenuFor(player);
-            return false;
-        }
-
-        if (inputCode.length() > 50)
-        {
-            CloseGossipMenuFor(player);
-            return false;
-        }
-
-        if (inputCode.empty())
+        if (inputCode.find('\'') != std::string::npos ||
+            inputCode.find('%') != std::string::npos ||
+            inputCode.find(',') != std::string::npos ||
+            inputCode.length() > 50 ||
+            inputCode.empty())
         {
             ChatHandler(player->GetSession()).PSendSysMessage("Invalid input.");
             CloseGossipMenuFor(player);
@@ -833,7 +798,6 @@ private:
         //uint32 loserMMR;
     };
 
-
     std::string GetGossipText(ReplayInfo info) {
         std::string iconsTextTeam1 = GetPlayersIconTexts(info.winnerPlayerGuids);
         std::string iconsTextTeam2 = GetPlayersIconTexts(info.loserPlayerGuids);
@@ -845,7 +809,7 @@ private:
             std::to_string(info.winnerTeamRating) + ")" +
             iconsTextTeam1 + "" +
             " '" + coloredWinnerTeamName + "'" +
-            "\n vs   (" + std::to_string(info.loserTeamRating) + ")" +
+            "\n vs (" + std::to_string(info.loserTeamRating) + ")" +
             iconsTextTeam2 + "" +
             " '" + LoserTeamName + "'");
 
@@ -1148,7 +1112,8 @@ private:
 
             WorldPacket packet(opcode, packetSize);
 
-            if (packetSize > 0) {
+            if (packetSize > 0)
+            {
                 std::vector<uint8> tmp(packetSize, 0);
                 buffer.read(&tmp[0], packetSize);
                 packet.append(&tmp[0], packetSize);
@@ -1162,13 +1127,17 @@ private:
 class ConfigLoaderArenaReplay : public WorldScript
 {
 public:
-    ConfigLoaderArenaReplay() : WorldScript("config_loader_arena_replay") {}
-    virtual void OnAfterConfigLoad(bool /*Reload*/) override {
+    ConfigLoaderArenaReplay() : WorldScript("config_loader_arena_replay", {
+        WORLDHOOK_ON_AFTER_CONFIG_LOAD
+    }) {}
+    virtual void OnAfterConfigLoad(bool /*Reload*/) override
+    {
         DeleteOldReplays();
     }
 
 private:
-    void DeleteOldReplays() {
+    void DeleteOldReplays()
+    {
         // delete all the replays older than X days
         const auto days = sConfigMgr->GetOption<uint32>("ArenaReplay.DeleteReplaysAfterDays", 30);
         if (days > 0)
@@ -1177,16 +1146,14 @@ private:
 
             const bool deleteSavedReplays = sConfigMgr->GetOption<bool>("ArenaReplay.DeleteSavedReplays", false);
 
-            if (!deleteSavedReplays) {
+            if (!deleteSavedReplays)
                 addition = "AND `id` NOT IN (SELECT `replay_id` FROM `character_saved_replays`)";
-            }
 
             const auto query = "DELETE FROM `character_arena_replays` WHERE `timestamp` < (NOW() - INTERVAL " + std::to_string(days) + " DAY) " + addition;
             CharacterDatabase.Execute(query);
 
-            if (deleteSavedReplays) {
+            if (deleteSavedReplays)
                 CharacterDatabase.Execute("DELETE FROM `character_saved_replays` WHERE `replay_id` NOT IN (SELECT `id` FROM `character_arena_replays`)");
-            }
         }
     }
 };

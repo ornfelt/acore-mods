@@ -13,8 +13,7 @@
 #include "Channel.h"
 #include "Chat.h"
 #include "Common.h"
-#include "World.h"
-#include "WorldSession.h"
+#include "WorldSessionMgr.h"
 #include "Config.h"
 #include <unordered_map>
 
@@ -128,9 +127,9 @@ void SendWorldMessage(Player* sender, const std::string msg, int team) {
 
     std::string message;
 
-    SessionMap sessions = sWorld->GetAllSessions();
+    WorldSessionMgr::SessionMap sessions = sWorldSessionMgr->GetAllSessions();
 
-    for (SessionMap::iterator itr = sessions.begin(); itr != sessions.end(); ++itr)
+    for (WorldSessionMgr::SessionMap::iterator itr = sessions.begin(); itr != sessions.end(); ++itr)
     {
         if (!itr->second)
         {
@@ -287,7 +286,7 @@ public:
 
     WorldChat_Announce() : PlayerScript("WorldChat_Announce") {}
 
-    void OnLogin(Player* player)
+    void OnPlayerLogin(Player* player)
     {
         // Announce Module
         if (WC_Config.Enabled && WC_Config.Announce)
@@ -296,9 +295,9 @@ public:
         }
     }
 
-    void OnChat(Player* player, uint32 /*type*/, uint32 lang, std::string& msg, Channel* channel)
+    void OnPlayerChat(Player* player, uint32 /*type*/, uint32 lang, std::string& msg, Channel* channel)
     {
-        if (WC_Config.ChannelName != "" && lang != LANG_ADDON && channel->GetName() != WC_Config.ChannelName)
+        if (WC_Config.ChannelName != "" && lang != LANG_ADDON && channel->GetName() == WC_Config.ChannelName)
         {
             SendWorldMessage(player, msg, -1);
             msg = -1;
